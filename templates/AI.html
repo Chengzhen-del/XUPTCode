@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <script src="../static/js/config.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI问答 - 西邮代码库 XUPTCode</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 图标库 -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+
+    <!-- 西邮校色配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        xiyou: {
+                            blue: '#00529B',    // 西邮主蓝
+                            red: '#E63946',     // 西邮辅助红
+                            light: '#E8F4FD',   // 浅蓝背景
+                        },
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-hover {
+                transition: all 0.3s ease;
+            }
+            .card-hover:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 25px -5px rgba(0, 82, 155, 0.1);
+            }
+            .btn-disabled {
+                @apply bg-gray-400 cursor-not-allowed hover:bg-gray-400;
+            }
+            /* AI聊天气泡样式 */
+            .chat-bubble-user {
+                @apply bg-xiyou-blue text-white rounded-lg rounded-tr-none px-4 py-3 max-w-[80%] ml-auto;
+            }
+            .chat-bubble-ai {
+                @apply bg-white border border-gray-200 rounded-lg rounded-tl-none px-4 py-3 max-w-[80%] mr-auto;
+            }
+            .chat-bubble-loading {
+                @apply bg-white border border-gray-200 rounded-lg px-4 py-3 max-w-[80%] mr-auto flex items-center gap-2;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans min-h-screen flex flex-col">
+<!-- 顶部导航栏 -->
+<header class="sticky top-0 z-50 bg-white shadow-sm">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+            <!-- 左侧Logo -->
+            <div class="flex items-center">
+                <div class="text-xiyou-blue font-bold text-2xl mr-8">
+                    XUPT<span class="text-xiyou-red">Code</span>
+                </div>
+                <!-- 导航菜单（桌面端） -->
+                <nav class="hidden md:flex space-x-6">
+                    <a href="/page/index" class="text-gray-600 font-medium hover:text-xiyou-blue transition-colors">首页</a>
+                    <a href="/page/resource-list" class="text-gray-600 font-medium hover:text-xiyou-blue transition-colors">资源库</a>
+                    <a href="/page/upload" class="text-gray-600 font-medium hover:text-xiyou-blue transition-colors">上传资源</a>
+                    <a href="/page/first" class="text-gray-600 font-medium hover:text-xiyou-blue transition-colors">主页</a>
+                    <a href="/page/ai" class="text-xiyou-blue font-medium hover:text-xiyou-red transition-colors">AI</a>
+                </nav>
+            </div>
+
+            <!-- 右侧用户信息 + 退出登录 -->
+            <div class="flex items-center space-x-4">
+                <div class="hidden md:flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-xiyou-blue font-bold bg-xiyou-light">
+                        <span id="userInitial">U</span>
+                    </div>
+                    <div class="text-left">
+                        <div class="text-sm font-medium text-gray-800" id="navUsername">用户名</div>
+                        <div class="text-xs text-gray-500">个人中心</div>
+                    </div>
+                </div>
+
+                <button id="logoutBtn" class="text-gray-600 hover:text-xiyou-red transition-colors flex items-center">
+                    <i class="fa fa-sign-out mr-1"></i>
+                    <span class="hidden sm:inline">退出登录</span>
+                </button>
+
+                <button class="md:hidden text-gray-700 hover:text-xiyou-blue" id="mobileMenuBtn">
+                    <i class="fa fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- AI问答核心区域 -->
+<section class="py-8 md:py-12 flex-1">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-sm overflow-hidden">
+            <!-- 标题栏 -->
+            <div class="bg-xiyou-light px-6 py-4 border-b border-gray-200">
+                <h2 class="text-xl font-bold text-xiyou-blue flex items-center">
+                    <i class="fa fa-robot mr-2"></i> 西邮代码库智能助手（全前端版）
+                </h2>
+                <p class="text-sm text-gray-600 mt-1">
+                    直接调用DeepSeek API，基于你的个人信息、账户数据、资源列表精准解答
+                </p>
+            </div>
+
+            <!-- DeepSeek API Key配置（前端必填） -->
+            <div class="px-6 py-3 border-b border-gray-200 bg-gray-50">
+                <div class="flex items-center gap-2 text-sm">
+                    <label for="deepseekApiKey" class="text-gray-700 font-medium">DeepSeek API Key：</label>
+                    <input
+                            type="text"
+                            id="deepseekApiKey"
+                            placeholder="请输入你的DeepSeek API Key（从平台获取）"
+                            class="flex-1 border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-1 focus:ring-xiyou-blue"
+                            value=""
+                    >
+                    <span class="text-xs text-gray-500">
+            (必填：<a href="https://platform.deepseek.com/" target="_blank" class="text-xiyou-blue hover:underline">点击前往DeepSeek平台获取</a>)
+        </span>
+                </div>
+            </div>
+
+            <!-- 聊天区域 -->
+            <div class="h-[500px] overflow-y-auto p-6 bg-gray-50" id="chatContainer">
+                <!-- 欢迎消息 -->
+                <div class="chat-bubble-ai mb-4">
+                    <div class="font-medium text-xiyou-blue mb-1">智能助手</div>
+                    <p>你好！我可以基于你的真实数据回答以下问题：<br>
+                        1. 个人信息查询（用户名、角色、真实姓名等）<br>
+                        2. 账户信息查询（余额、总充值、总消费等）<br>
+                        3. 资源相关查询（上传/购买的资源、资源数量等）<br>
+                        4. 平台使用问题解答<br>
+                        5. 没有API可以暂时用作者的（sk-3b552a37770642f8a4e80586e51bb358）
+                        6. <a herf=""></a>
+                    </p>
+                </div>
+            </div>
+
+            <!-- 功能选项 + 输入区 -->
+            <div class="px-6 py-4 border-t border-gray-200">
+                <!-- 功能开关：是否查询数据库 -->
+                <div class="flex items-center mb-4 text-sm">
+                    <input type="checkbox" id="useDatabase" class="w-4 h-4 text-xiyou-blue rounded border-gray-300 focus:ring-xiyou-blue" checked>
+                    <label for="useDatabase" class="ml-2 text-gray-700">
+                        <i class="fa fa-database mr-1 text-xiyou-blue"></i> 基于我的真实数据回答（推荐）
+                    </label>
+                </div>
+
+                <!-- 输入框 + 按钮 -->
+                <div class="flex gap-3">
+                    <textarea
+                            id="questionInput"
+                            placeholder="请输入你的问题（例如：我的账户余额是多少？我上传了哪些资源？）..."
+                            class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-xiyou-blue/50 focus:border-xiyou-blue resize-none"
+                            rows="2"></textarea>
+                    <div class="flex flex-col gap-2">
+                        <button id="sendBtn" class="bg-xiyou-blue text-white rounded-lg px-4 py-2 hover:bg-xiyou-blue/90 transition-colors flex items-center justify-center">
+                            <i class="fa fa-paper-plane mr-1"></i> 发送
+                        </button>
+                        <button id="clearBtn" class="bg-gray-200 text-gray-700 rounded-lg px-4 py-2 hover:bg-gray-300 transition-colors flex items-center justify-center">
+                            <i class="fa fa-trash mr-1"></i> 清空
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 全局提示框 -->
+<div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-lg bg-gray-800 text-white shadow-lg hidden flex items-center">
+    <i class="fa fa-info-circle mr-2" id="toastIcon"></i>
+    <span id="toastText">操作提示</span>
+</div>
+
+<!-- 页脚 -->
+<footer class="bg-gray-800 text-white py-8 mt-auto">
+    <div class="container mx-auto px-4 text-center text-gray-400 text-sm">
+        <p>© 2026 XUPTCode - 西安邮电大学校园代码库 | 仅限校内学习交流使用</p>
+    </div>
+</footer>
+
+<script>
+    // ========== 核心配置 ==========
+    const CONFIG = {
+        // 业务接口配置
+        API: {
+            BASE_URL: AppConfig.API_BASE_URL, // 你的后端业务接口地址
+            GET_INFO: '/staff/get-info',      // 用户基本信息（GET）
+            GET_ACCOUNT: '/account/get-account', // 账户信息（GET）
+            RESOURCE_LIST: '/resource/list'   // 资源列表（POST）
+        },
+        // DeepSeek API配置（全前端核心）
+        DEEPSEEK: {
+            API_URL: 'https://api.deepseek.com/v1/chat/completions', // DeepSeek官方API地址
+            MODEL: 'deepseek-chat',          // 使用的模型
+            TEMPERATURE: 0.1                 // 低随机性，保证回答精准
+        },
+        // 页面/存储配置
+        PAGES: {
+            LOGIN: '/page/index'
+        },
+        STORAGE: {
+            KEY: 'xuptcode_user_info',
+            CHAT_HISTORY: 'xuptcode_chat_history'
+        },
+        // 预定AI提示词
+        AI_PROMPT: `你是西邮代码库的专属智能助手，必须严格基于以下用户的真实业务数据回答问题：
+### 回答规则 ###
+1. 使用提供的用户数据回答，绝对不能编造任何信息（包括数字、名称、时间等）；
+2. 回答要简洁、精准，用自然语言总结，不要返回原始JSON格式；
+3. 如果某个数据为空/不存在，直接告知用户“暂无相关数据”；
+4. 回答和西邮代码库相关的问题，或者工科专业的问题；
+5. 涉及账户金额、资源数量的，必须准确核对数据后再回答。
+
+### 用户数据格式说明 ###
+1. 用户基本信息：包含用户ID、用户名、角色、真实姓名、性别等；
+2. 账户信息：包含账户余额、总充值、总消费等；
+3. 资源列表：包含平台所有资源（标题、ID、作者、上传时间、上传者ID等）。`
+    };
+
+    // 向后兼容常量
+    const API_BASE_URL = CONFIG.API.BASE_URL;
+    const STORAGE_KEY = CONFIG.STORAGE.KEY;
+    const LOGIN_PAGE_URL = CONFIG.PAGES.LOGIN;
+
+    // ========== DOM元素 ==========
+    // 基础元素
+    const navUsername = document.getElementById('navUsername');
+    const userInitial = document.getElementById('userInitial');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const toast = document.getElementById('toast');
+    const toastIcon = document.getElementById('toastIcon');
+    const toastText = document.getElementById('toastText');
+
+    // AI核心元素
+    const chatContainer = document.getElementById('chatContainer');
+    const questionInput = document.getElementById('questionInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const useDatabase = document.getElementById('useDatabase');
+    const deepseekApiKey = document.getElementById('deepseekApiKey');
+
+    // ========== 状态控制 ==========
+    let chatHistory = [];
+    let isLoading = false;
+    let currentUserId = ''; // 存储当前用户ID，用于匹配资源上传者
+
+    // ========== 工具函数 ==========
+    /**
+     * 获取本地存储的用户Token
+     */
+    function getToken() {
+        const userInfoStr = localStorage.getItem(STORAGE_KEY) || sessionStorage.getItem(STORAGE_KEY);
+        if (!userInfoStr) return null;
+        try {
+            const userInfo = JSON.parse(userInfoStr);
+            return userInfo.token || null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    /**
+     * 显示提示框
+     */
+    function showToast(text, type = 'info', duration = 3000) {
+        if (type === 'success') {
+            toastIcon.className = 'fa fa-check-circle mr-2';
+            toast.classList.add('bg-green-600');
+            toast.classList.remove('bg-red-600', 'bg-gray-800');
+        } else if (type === 'error') {
+            toastIcon.className = 'fa fa-exclamation-circle mr-2';
+            toast.classList.add('bg-red-600');
+            toast.classList.remove('bg-green-600', 'bg-gray-800');
+        } else {
+            toastIcon.className = 'fa fa-info-circle mr-2';
+            toast.classList.add('bg-gray-800');
+            toast.classList.remove('bg-green-600', 'bg-red-600');
+        }
+        toastText.textContent = text;
+        toast.classList.remove('hidden');
+        setTimeout(() => {
+            toast.classList.add('hidden');
+        }, duration);
+    }
+
+    /**
+     * 通用API请求函数（调用业务接口）
+     * 修正：确保所有请求正确携带Token，适配POST/GET
+     */
+    async function requestBusinessApi(url, method = 'GET', data = null) {
+        const token = getToken();
+        if (!token) {
+            throw new Error('未检测到登录状态，请重新登录');
+        }
+
+        const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` // 所有接口都携带Token
+        };
+
+        const requestOptions = {
+            method,
+            headers,
+            credentials: 'include'
+        };
+
+        // POST/PUT请求添加body
+        if (data && (method === 'POST' || method === 'PUT')) {
+            requestOptions.body = JSON.stringify(data);
+        }
+
+        // GET请求拼接参数
+        if (data && method === 'GET') {
+            const params = new URLSearchParams();
+            for (const key in data) {
+                if (data[key] !== '' && data[key] !== null && data[key] !== undefined) {
+                    params.append(key, data[key]);
+                }
+            }
+            url += `?${params.toString()}`;
+        }
+
+        const response = await fetch(`${API_BASE_URL}${url}`, requestOptions);
+
+        if (!response.ok) {
+            throw new Error(`业务接口请求失败：${response.status}`);
+        }
+
+        const result = await response.json();
+        if (result.code !== 200) {
+            throw new Error(result.msg || result.message || '业务接口返回错误');
+        }
+
+        return result.data;
+    }
+
+    /**
+     * 调用DeepSeek API（全前端核心）
+     */
+    async function callDeepSeekApi(messages) {
+        const apiKey = deepseekApiKey.value.trim();
+        if (!apiKey) {
+            throw new Error('请先输入DeepSeek API Key');
+        }
+
+        const requestBody = {
+            model: CONFIG.DEEPSEEK.MODEL,
+            messages: messages,
+            temperature: CONFIG.DEEPSEEK.TEMPERATURE,
+            stream: false
+        };
+
+        const response = await fetch(CONFIG.DEEPSEEK.API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(`DeepSeek API调用失败：${response.status} - ${errorData.error?.message || '未知错误'}`);
+        }
+
+        const result = await response.json();
+        if (!result.choices || result.choices.length === 0) {
+            throw new Error('DeepSeek API未返回有效回答');
+        }
+
+        return result.choices[0].message.content;
+    }
+
+    /**
+     * 获取用户全量业务数据（三个接口）
+     * 修正：完全适配你提供的真实接口返回格式
+     */
+    async function getUserFullData() {
+        let dataContext = "";
+
+        // 1. 获取用户基本信息（适配真实返回格式）
+        try {
+            const userInfo = await requestBusinessApi(CONFIG.API.GET_INFO, 'GET');
+            // 存储当前用户ID，用于后续匹配资源上传者
+            currentUserId = userInfo.id.toString();
+
+            // 处理生日字段（适配 {"String": "2006-05-03T00:00:00+08:00", "Valid": true} 格式）
+            let birthDate = '未设置';
+            if (userInfo.birth_date && userInfo.birth_date.Valid) {
+                birthDate = userInfo.birth_date.String.split('T')[0]; // 提取日期部分
+            }
+
+            dataContext += `### 1. 用户基本信息 ###
+- 用户ID：${userInfo.id || '未知'}
+- 用户名：${userInfo.username || '未知'}
+- 角色：${userInfo.role || '未知'}
+- 真实姓名：${userInfo.real_name || '未设置'}
+- 性别：${userInfo.gender || '未设置'}
+- 邮箱：${userInfo.email || '未设置'}
+- 手机号：${userInfo.phone || '未设置'}
+- 生日：${birthDate}
+- 头像地址：${userInfo.avatar_url || '未设置'}
+
+`;
+        } catch (error) {
+            dataContext += `### 1. 用户基本信息 ###
+获取失败：${error.message}
+
+`;
+        }
+
+        // 2. 获取账户信息（适配真实返回格式：balance/total_recharge/total_consume）
+        try {
+            const accountInfo = await requestBusinessApi(CONFIG.API.GET_ACCOUNT, 'GET');
+            dataContext += `### 2. 账户信息 ###
+- 账户UUID：${accountInfo.uuid || '未知'}
+- 账户余额：${accountInfo.balance !== undefined ? accountInfo.balance + '元' : '未知'}
+- 总充值金额：${accountInfo.total_recharge !== undefined ? accountInfo.total_recharge + '元' : '未知'}
+- 总消费金额：${accountInfo.total_consume !== undefined ? accountInfo.total_consume + '元' : '未知'}
+
+`;
+        } catch (error) {
+            dataContext += `### 2. 账户信息 ###
+获取失败：${error.message}
+
+`;
+        }
+
+        // 3. 获取资源列表（修正：POST请求，适配真实返回格式）
+        try {
+            // 修正：POST请求参数（page/size/keyword）
+            const resourceList = await requestBusinessApi(CONFIG.API.RESOURCE_LIST, 'POST', {
+                page: 1,
+                size: 10,
+                keyword: ""
+            });
+            const resources = resourceList.list || [];
+
+            // 修正：统计当前用户上传的资源数（匹配user_id字段）
+            const myResources = resources.filter(r => r.user_id.toString() === currentUserId);
+
+            dataContext += `### 3. 资源列表 ###
+- 资源总数：${resourceList.total || 0}
+- 我的上传资源数：${myResources.length || 0}
+- 资源详情：
+`;
+            if (resources.length > 0) {
+                resources.forEach((res, index) => {
+                    // 标记是否是当前用户上传的资源
+                    const isMyResource = res.user_id.toString() === currentUserId ? '【我的资源】' : '';
+                    dataContext += `  ${index+1}. ${isMyResource}标题：${res.title || '无标题'}，ID：${res.id || '未知'}，作者：${res.author || '未知'}，上传时间：${res.publish_time || '未知'}，上传者ID：${res.user_id || '未知'}
+`;
+                });
+            } else {
+                dataContext += `  暂无资源记录
+`;
+            }
+        } catch (error) {
+            dataContext += `### 3. 资源列表 ###
+获取失败：${error.message}
+
+`;
+        }
+
+        return dataContext;
+    }
+
+    /**
+     * 退出登录跳转
+     */
+    function logoutAndRedirect() {
+        localStorage.removeItem(STORAGE_KEY);
+        sessionStorage.removeItem(STORAGE_KEY);
+        window.location.href = LOGIN_PAGE_URL;
+    }
+
+    // ========== 聊天相关函数 ==========
+    /**
+     * 加载聊天历史
+     */
+    function loadChatHistory() {
+        const historyStr = localStorage.getItem(CONFIG.STORAGE.CHAT_HISTORY);
+        if (historyStr) {
+            try {
+                chatHistory = JSON.parse(historyStr);
+                chatHistory.forEach(msg => {
+                    addMessageToChat(msg.role, msg.content);
+                });
+            } catch (e) {
+                chatHistory = [];
+            }
+        }
+    }
+
+    /**
+     * 保存聊天历史
+     */
+    function saveChatHistory() {
+        localStorage.setItem(CONFIG.STORAGE.CHAT_HISTORY, JSON.stringify(chatHistory));
+    }
+
+    /**
+     * 添加消息到聊天界面
+     */
+    function addMessageToChat(role, content) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = role === 'user' ? 'chat-bubble-user mb-4' : 'chat-bubble-ai mb-4';
+
+        const formattedContent = content.replace(/\n/g, '<br>');
+
+        if (role === 'ai') {
+            messageDiv.innerHTML = `
+                <div class="font-medium text-xiyou-blue mb-1">智能助手</div>
+                <p>${formattedContent}</p>
+            `;
+        } else {
+            messageDiv.innerHTML = `
+                <div class="font-medium text-white mb-1">你</div>
+                <p>${formattedContent}</p>
+            `;
+        }
+
+        chatContainer.appendChild(messageDiv);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    /**
+     * 显示加载中消息
+     */
+    function showLoadingMessage() {
+        const loadingDiv = document.createElement('div');
+        loadingDiv.className = 'chat-bubble-loading mb-4';
+        loadingDiv.id = 'loadingMsg';
+        loadingDiv.innerHTML = `
+            <div class="font-medium text-xiyou-blue mb-1">智能助手</div>
+            <div class="flex items-center">
+                <i class="fa fa-spinner fa-spin mr-2"></i>
+                <span>正在获取数据并思考中...</span>
+            </div>
+        `;
+        chatContainer.appendChild(loadingDiv);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    /**
+     * 移除加载中消息
+     */
+    function removeLoadingMessage() {
+        const loadingDiv = document.getElementById('loadingMsg');
+        if (loadingDiv) loadingDiv.remove();
+    }
+
+    /**
+     * 发送聊天请求（全前端核心逻辑）
+     */
+    async function sendChatRequest() {
+        const question = questionInput.value.trim();
+        if (!question) {
+            showToast('请输入你的问题', 'error');
+            return;
+        }
+        if (isLoading) return;
+
+        // 1. 前置校验
+        const token = getToken();
+        if (!token) {
+            showToast('登录状态失效，请重新登录', 'error');
+            setTimeout(logoutAndRedirect, 2000);
+            return;
+        }
+
+        // 2. 添加用户消息
+        addMessageToChat('user', question);
+        chatHistory.push({ role: 'user', content: question });
+        saveChatHistory();
+        questionInput.value = '';
+
+        // 3. 显示加载状态
+        isLoading = true;
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-1"></i> 思考中';
+        showLoadingMessage();
+
+        try {
+            // 4. 构建AI消息列表
+            let messages = [
+                { role: 'system', content: CONFIG.AI_PROMPT }
+            ];
+
+            // 5. 如果启用真实数据，拼接业务数据
+            if (useDatabase.checked) {
+                const userData = await getUserFullData();
+                messages[0].content += `\n\n### 用户真实业务数据 ###\n${userData}`;
+            }
+
+            // 6. 添加聊天历史
+            messages = messages.concat(chatHistory);
+
+            // 7. 调用DeepSeek API
+            const aiAnswer = await callDeepSeekApi(messages);
+
+            // 8. 添加AI回答
+            removeLoadingMessage();
+            addMessageToChat('ai', aiAnswer);
+            chatHistory.push({ role: 'assistant', content: aiAnswer }); // DeepSeek要求role为assistant
+            saveChatHistory();
+            showToast('回答成功', 'success');
+
+        } catch (error) {
+            // 9. 错误处理
+            removeLoadingMessage();
+            addMessageToChat('ai', `抱歉，回答失败：${error.message}`);
+            showToast(error.message, 'error');
+            console.error('聊天请求失败：', error);
+        } finally {
+            // 10. 恢复状态
+            isLoading = false;
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = '<i class="fa fa-paper-plane mr-1"></i> 发送';
+        }
+    }
+
+    /**
+     * 清空聊天记录
+     */
+    function clearChatHistory() {
+        if (confirm('确定清空所有聊天记录吗？')) {
+            chatHistory = [];
+            localStorage.removeItem(CONFIG.STORAGE.CHAT_HISTORY);
+            chatContainer.innerHTML = `
+                <div class="chat-bubble-ai mb-4">
+                    <div class="font-medium text-xiyou-blue mb-1">智能助手</div>
+                    <p>你好！我可以基于你的真实数据回答以下问题：<br>
+                    1. 个人信息查询（用户名、角色、真实姓名等）<br>
+                    2. 账户信息查询（余额、总充值、总消费等）<br>
+                    3. 资源相关查询（上传/购买的资源、资源数量等）<br>
+                    4. 平台使用问题解答</p>
+                </div>
+            `;
+            showToast('聊天记录已清空', 'success');
+        }
+    }
+
+    // ========== 初始化和事件绑定 ==========
+    // 页面加载初始化
+    window.addEventListener('load', async () => {
+        // 校验登录状态
+        if (!getToken()) {
+            window.location.href = LOGIN_PAGE_URL;
+            return;
+        }
+
+        // 加载用户信息
+        try {
+            const userInfo = await requestBusinessApi(CONFIG.API.GET_INFO, 'GET');
+            navUsername.textContent = userInfo.username || '未知用户';
+            userInitial.textContent = userInfo.username ? userInfo.username.charAt(0).toUpperCase() : 'U';
+            currentUserId = userInfo.id.toString(); // 初始化当前用户ID
+        } catch (error) {
+            showToast('加载用户信息失败', 'error');
+        }
+
+        // 加载聊天历史
+        loadChatHistory();
+    });
+
+    // 发送按钮点击
+    sendBtn.addEventListener('click', sendChatRequest);
+
+    // 输入框回车发送（Shift+回车换行）
+    questionInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendChatRequest();
+        }
+    });
+
+    // 清空按钮
+    clearBtn.addEventListener('click', clearChatHistory);
+
+    // 退出登录
+    logoutBtn.addEventListener('click', () => {
+        if (confirm('确定退出登录吗？')) {
+            logoutAndRedirect();
+            showToast('退出成功', 'success');
+        }
+    });
+
+    // 移动端菜单
+    mobileMenuBtn.addEventListener('click', () => {
+        alert('移动端菜单功能可后续完善');
+    });
+</script>
+</body>
+</html>

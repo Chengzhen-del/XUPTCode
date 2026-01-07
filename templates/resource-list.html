@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <script src="../static/js/config.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>资源库 - 西邮代码库 XUPTCode</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 图标库 -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- 代码高亮（预览代码片段） -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+    <!-- 西邮校色配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        xiyou: {
+                            blue: '#00529B',    // 西邮主蓝
+                            red: '#E63946',     // 西邮辅助红
+                            light: '#E8F4FD',   // 西邮背景浅蓝
+                        },
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-hover {
+                transition: all 0.2s ease;
+            }
+            .card-hover:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 24px -4px rgba(0, 82, 155, 0.15);
+            }
+            .text-truncate-2 {
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+            }
+            .text-truncate-3 {
+                display: -webkit-box;
+                -webkit-line-clamp: 3;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+            }
+            .code-preview {
+                font-size: 12px;
+                line-height: 1.4;
+                background: #f8f9fa;
+                border-radius: 4px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans min-h-screen flex flex-col">
+<!-- 顶部导航栏（复用统一风格） -->
+<header class="sticky top-0 z-50 bg-white shadow-sm">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+            <!-- 左侧Logo -->
+            <div class="flex items-center">
+                <div class="text-xiyou-blue font-bold text-2xl mr-8">
+                    XUPT<span class="text-xiyou-red">Code</span>
+                </div>
+                <!-- 导航菜单（桌面端） -->
+                <nav class="hidden md:flex space-x-6">
+                    <a href="/page/index" class="text-gray-600 font-medium hover:text-xiyou-blue transition-colors">首页</a>
+                    <a href="/page/resource-list" class="text-xiyou-blue font-medium hover:text-xiyou-red transition-colors">资源库</a>
+                    <a href="/page/upload" class="text-gray-600 font-medium hover:text-xiyou-blue transition-colors">上传资源</a>
+                    <a href="/page/first" class="text-gray-600 font-medium hover:text-xiyou-blue transition-colors">主页</a>
+                    <a href="/page/ai" class="text-gray-600 font-medium hover:text-xiyou-blue transition-colors">AI</a>
+                </nav>
+            </div>
+
+            <!-- 右侧用户信息 + 退出登录 -->
+            <div class="flex items-center space-x-4">
+                <!-- 简化版用户信息 -->
+                <div class="hidden md:flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-xiyou-blue font-bold bg-xiyou-light">
+                        <span id="userInitial">U</span>
+                    </div>
+                    <div class="text-left">
+                        <div class="text-sm font-medium text-gray-800" id="navUsername">用户名</div>
+                        <div class="text-xs text-gray-500">个人中心</div>
+                    </div>
+                </div>
+
+                <!-- 退出登录按钮 -->
+                <button id="logoutBtn" class="text-gray-600 hover:text-xiyou-red transition-colors flex items-center">
+                    <i class="fa fa-sign-out mr-1"></i>
+                    <span class="hidden sm:inline">退出登录</span>
+                </button>
+
+                <!-- 移动端菜单按钮 -->
+                <button class="md:hidden text-gray-700 hover:text-xiyou-blue" id="mobileMenuBtn">
+                    <i class="fa fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- 面包屑导航 -->
+<section class="bg-white border-b border-gray-200 py-3">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center text-sm">
+            <a href="/page/index" class="text-gray-600 hover:text-xiyou-blue">首页</a>
+            <i class="fa fa-angle-right mx-2 text-gray-400"></i>
+            <span class="text-xiyou-blue font-medium">资源库</span>
+        </div>
+    </div>
+</section>
+
+<!-- 核心内容区 -->
+<main class="flex-grow py-8 md:py-12">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- 搜索栏 -->
+        <div class="bg-white rounded-xl shadow-sm p-4 md:p-6 mb-8">
+            <div class="flex flex-col md:flex-row gap-4">
+                <div class="flex-1 relative">
+                    <input
+                            type="text"
+                            id="searchInput"
+                            class="w-full px-4 py-3 pl-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-xiyou-blue focus:border-xiyou-blue"
+                            placeholder="搜索资源标题/内容（如：Go错误处理、zap日志）"
+                    >
+                    <i class="fa fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                </div>
+                <button id="searchBtn" class="px-6 py-3 bg-xiyou-blue text-white rounded-md hover:bg-xiyou-blue/90 transition-colors flex items-center justify-center">
+                    <i class="fa fa-search mr-2"></i>
+                    <span>搜索</span>
+                </button>
+                <button id="resetSearchBtn" class="px-6 py-3 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors flex items-center justify-center">
+                    <i class="fa fa-refresh mr-2"></i>
+                    <span>重置</span>
+                </button>
+            </div>
+            <div class="mt-4 text-sm text-gray-500 flex items-center">
+                <i class="fa fa-info-circle mr-2 text-xiyou-blue"></i>
+                <span>共 <span id="totalCount" class="text-xiyou-blue font-medium">0</span> 条资源，支持按标题、文本内容、代码内容模糊搜索</span>
+            </div>
+        </div>
+
+        <!-- 加载状态 -->
+        <div id="loading" class="flex flex-col items-center justify-center py-20 text-gray-600">
+            <i class="fa fa-spinner fa-spin text-3xl mb-4 text-xiyou-blue"></i>
+            <p>正在加载资源列表...</p>
+        </div>
+
+        <!-- 空数据状态 -->
+        <div id="empty" class="py-20 text-center text-gray-500 hidden">
+            <i class="fa fa-folder-open-o text-5xl mb-4 text-gray-300"></i>
+            <h3 class="text-lg font-medium mb-2">暂无资源</h3>
+            <p class="mb-6">未找到符合条件的资源，可尝试更换搜索关键词</p>
+            <a href="/page/upload" class="px-6 py-2 bg-xiyou-blue text-white rounded-md hover:bg-xiyou-blue/90 transition-colors">
+                <i class="fa fa-cloud-upload mr-1"></i> 发布第一个资源
+            </a>
+        </div>
+
+        <!-- 错误状态 -->
+        <div id="error" class="py-20 text-center text-red-500 hidden">
+            <i class="fa fa-exclamation-circle text-3xl mb-4"></i>
+            <p id="errorText">加载失败，请刷新重试</p>
+            <button onclick="loadResourceList()" class="mt-4 px-4 py-2 bg-xiyou-blue text-white rounded-md hover:bg-xiyou-blue/90 transition-colors">
+                重新加载
+            </button>
+        </div>
+
+        <!-- 资源列表 -->
+        <div id="resourceList" class="grid grid-cols-1 gap-6 mb-8 hidden">
+            <!-- 资源项由JS动态生成 -->
+        </div>
+
+        <!-- 分页控件 -->
+        <div id="pagination" class="flex justify-center items-center space-x-2 py-4 hidden">
+            <button id="prevPage" class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="fa fa-angle-left"></i> 上一页
+            </button>
+            <span id="pageInfo" class="px-4 py-2 text-gray-700">第 1 页 / 共 0 页</span>
+            <button id="nextPage" class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                下一页 <i class="fa fa-angle-right"></i>
+            </button>
+        </div>
+    </div>
+</main>
+
+<!-- 全局提示框 -->
+<div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-lg bg-gray-800 text-white shadow-lg hidden flex items-center">
+    <i class="fa fa-info-circle mr-2" id="toastIcon"></i>
+    <span id="toastText">操作提示</span>
+</div>
+
+<!-- 页脚 -->
+<footer class="bg-gray-800 text-white py-8 mt-auto">
+    <div class="container mx-auto px-4 text-center text-gray-400 text-sm">
+        <p>© 2026 XUPTCode - 西安邮电大学校园代码库 | 仅限校内学习交流使用</p>
+    </div>
+</footer>
+
+<script>
+    // ========== 核心配置 ==========
+    const API_BASE_URL = AppConfig.API_BASE_URL; // 替换为你的后端地址
+    const USER_INFO_API = '/staff/get-info';     // 获取用户信息接口
+    const RESOURCE_LIST_API = '/resource/list'; // 资源列表接口
+    const STORAGE_KEY = 'xuptcode_user_info';   // Token存储key
+    const LOGIN_PAGE_URL = '/page/index';        // 登录页地址
+    const RESOURCE_INCR_VIEW_API = '/resource/incr-view-count';
+    // 分页参数
+    let currentPage = 1;
+    const pageSize = 10;
+    let totalPages = 0;
+    let totalResources = 0;
+    let currentKeyword = '';
+
+    // ========== DOM元素 ==========
+    // 状态元素
+    const loading = document.getElementById('loading');
+    const empty = document.getElementById('empty');
+    const error = document.getElementById('error');
+    const errorText = document.getElementById('errorText');
+    const resourceList = document.getElementById('resourceList');
+    const pagination = document.getElementById('pagination');
+
+    // 搜索元素
+    const searchInput = document.getElementById('searchInput');
+    const searchBtn = document.getElementById('searchBtn');
+    const resetSearchBtn = document.getElementById('resetSearchBtn');
+    const totalCount = document.getElementById('totalCount');
+
+    // 分页元素
+    const prevPage = document.getElementById('prevPage');
+    const nextPage = document.getElementById('nextPage');
+    const pageInfo = document.getElementById('pageInfo');
+
+    // 用户信息元素
+    const navUsername = document.getElementById('navUsername');
+    const userInitial = document.getElementById('userInitial');
+
+    // 提示框元素
+    const toast = document.getElementById('toast');
+    const toastIcon = document.getElementById('toastIcon');
+    const toastText = document.getElementById('toastText');
+
+    // ========== 工具函数 ==========
+    /**
+     * 获取本地存储的Token
+     */
+    function getToken() {
+        const userInfoStr = localStorage.getItem(STORAGE_KEY) || sessionStorage.getItem(STORAGE_KEY);
+        if (!userInfoStr) return null;
+
+        try {
+            const userInfo = JSON.parse(userInfoStr);
+            return userInfo.token || null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    /**
+     * 显示提示框
+     */
+    function showToast(text, type = 'info', duration = 3000) {
+        if (type === 'success') {
+            toastIcon.className = 'fa fa-check-circle mr-2';
+            toast.classList.add('bg-green-600');
+            toast.classList.remove('bg-red-600', 'bg-gray-800', 'bg-amber-500');
+        } else if (type === 'error') {
+            toastIcon.className = 'fa fa-exclamation-circle mr-2';
+            toast.classList.add('bg-red-600');
+            toast.classList.remove('bg-green-600', 'bg-gray-800', 'bg-amber-500');
+        } else if (type === 'warning') { // 新增warning类型
+            toastIcon.className = 'fa fa-exclamation-triangle mr-2';
+            toast.classList.add('bg-amber-500');
+            toast.classList.remove('bg-green-600', 'bg-red-600', 'bg-gray-800');
+        } else {
+            toastIcon.className = 'fa fa-info-circle mr-2';
+            toast.classList.add('bg-gray-800');
+            toast.classList.remove('bg-green-600', 'bg-red-600', 'bg-amber-500');
+        }
+
+        toastText.textContent = text;
+        toast.classList.remove('hidden');
+
+        setTimeout(() => {
+            toast.classList.add('hidden');
+        }, duration);
+    }
+
+    /**
+     * 发起API请求（带Token认证）
+     */
+    async function requestApi(url, method = 'GET', data = null) {
+        const token = getToken();
+        if (!token) {
+            throw new Error('未检测到登录状态，请重新登录');
+        }
+
+        const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        };
+
+        const requestOptions = {
+            method,
+            headers,
+            credentials: 'include'
+        };
+
+        // POST/PUT/PATCH 请求传递JSON Body
+        if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+            requestOptions.body = JSON.stringify(data);
+        }
+
+        // GET请求拼接参数（仅用于用户信息等GET接口）
+        if (data && method === 'GET') {
+            const params = new URLSearchParams();
+            for (const key in data) {
+                if (data[key] !== '' && data[key] !== null && data[key] !== undefined) {
+                    params.append(key, data[key]);
+                }
+            }
+            url += `?${params.toString()}`;
+        }
+
+        const response = await fetch(`${API_BASE_URL}${url}`, requestOptions);
+
+        if (!response.ok) {
+            throw new Error(`接口请求失败：${response.status}`);
+        }
+
+        return await response.json();
+    }
+
+    /**
+     * 清除登录状态并跳转
+     */
+    function logoutAndRedirect() {
+        localStorage.removeItem(STORAGE_KEY);
+        sessionStorage.removeItem(STORAGE_KEY);
+        window.location.href = LOGIN_PAGE_URL;
+    }
+
+    /**
+     * 格式化时间（YYYY-MM-DD HH:MM:SS → YYYY-MM-DD）
+     */
+    function formatTime(timeStr) {
+        if (!timeStr) return '未知时间';
+        return timeStr.split(' ')[0] || timeStr;
+    }
+
+    /**
+     * 截取代码预览（前100个字符）
+     */
+    function truncateCode(code) {
+        if (!code) return '无代码内容';
+        // 去除换行和多余空格，保留核心内容
+        const cleanCode = code.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim();
+        return cleanCode.length > 100 ? cleanCode.substring(0, 100) + '...' : cleanCode;
+    }
+
+    /**
+     * 防抖函数（避免频繁搜索）
+     */
+    function debounce(fn, delay = 500) {
+        let timer = null;
+        return function(...args) {
+            clearTimeout(timer);
+            timer = setTimeout(() => {
+                fn.apply(this, args);
+            }, delay);
+        };
+    }
+
+    // ========== 核心逻辑 ==========
+    /**
+     * 初始化页面（加载用户信息 + 资源列表）
+     */
+    async function initPage() {
+        try {
+            // 1. 加载用户信息（GET接口）
+            const userRes = await requestApi(USER_INFO_API, 'GET');
+            if (userRes.code === 200) {
+                const userData = userRes.data;
+                navUsername.textContent = userData.username || '未知用户';
+                userInitial.textContent = userData.username ? userData.username.charAt(0).toUpperCase() : 'U';
+            }
+
+            // 2. 加载资源列表（POST接口）
+            await loadResourceList();
+
+        } catch (err) {
+            // 用户信息加载失败不影响资源列表，但Token失效需跳转
+            if (err.message.includes('未检测到登录状态')) {
+                setTimeout(() => {
+                    logoutAndRedirect();
+                }, 2000);
+            }
+            console.error('页面初始化失败：', err);
+        }
+    }
+
+    /**
+     * 加载资源列表（POST请求，支持分页和搜索）
+     */
+    async function loadResourceList() {
+        // 重置状态
+        loading.classList.remove('hidden');
+        empty.classList.add('hidden');
+        error.classList.add('hidden');
+        resourceList.classList.add('hidden');
+        pagination.classList.add('hidden');
+
+        try {
+            // 构建POST请求参数（JSON Body）
+            const params = {
+                page: currentPage,
+                size: pageSize,
+                keyword: currentKeyword
+            };
+
+            // 调用资源列表接口（改为POST）
+            const response = await requestApi(RESOURCE_LIST_API, 'POST', params);
+
+            // 适配后端响应的msg字段（原代码是message）
+            if (response.code !== 200) {
+                throw new Error(response.msg || '获取资源列表失败');
+            }
+
+            const data = response.data;
+            totalResources = data.total || 0;
+            totalPages = Math.ceil(totalResources / pageSize);
+            const resources = data.list || [];
+
+            // 更新总数显示
+            totalCount.textContent = totalResources;
+
+            // 处理空数据
+            if (totalResources === 0) {
+                loading.classList.add('hidden');
+                empty.classList.remove('hidden');
+                return;
+            }
+
+            // 渲染资源列表
+            renderResourceList(resources);
+
+            // 更新分页信息
+            updatePagination();
+
+            // 显示列表和分页
+            loading.classList.add('hidden');
+            resourceList.classList.remove('hidden');
+            pagination.classList.remove('hidden');
+
+        } catch (err) {
+            loading.classList.add('hidden');
+            error.classList.remove('hidden');
+            errorText.textContent = err.message;
+
+            // Token失效处理
+            if (err.message.includes('未检测到登录状态')) {
+                setTimeout(() => {
+                    logoutAndRedirect();
+                }, 2000);
+            }
+
+            showToast(err.message, 'error');
+            console.error('加载资源列表失败：', err);
+        }
+    }
+
+    /**
+     * 渲染资源列表
+     */
+    function renderResourceList(resources) {
+        // 清空列表
+        resourceList.innerHTML = '';
+
+        // 遍历生成资源项
+        resources.forEach(resource => {
+            const resourceItem = document.createElement('div');
+            resourceItem.className = 'bg-white rounded-xl shadow-sm p-6 card-hover';
+
+            // 格式化发布时间
+            const publishTime = formatTime(resource.publish_time);
+
+            // 截取代码预览
+            const codePreview = truncateCode(resource.code_content);
+
+            // 资源项HTML（转义特殊字符避免XSS）
+            const title = resource.title ? resource.title.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '无标题';
+            const author = resource.author ? resource.author.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '未知作者';
+            const textContent = resource.text_content ? resource.text_content.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '无描述信息';
+
+            // 资源项HTML
+            resourceItem.innerHTML = `
+                <div class="flex justify-between items-start mb-4">
+                   <h3 class="text-lg md:text-xl font-bold text-xiyou-blue hover:text-xiyou-red transition-colors cursor-pointer"onclick="viewResourceDetail(${resource.id})">${title}</h3>
+                    <span class="text-xs text-gray-400">${publishTime}</span>
+                </div>
+                <div class="flex items-center mb-4 text-sm text-gray-600">
+                    <span class="flex items-center mr-4">
+                        <i class="fa fa-user-o mr-1 text-xiyou-blue"></i>
+                        <span>${author}</span>
+                    </span>
+                    <span class="flex items-center">
+                        <i class="fa fa-calendar-o mr-1 text-xiyou-blue"></i>
+                        <span>${publishTime}</span>
+                    </span>
+                </div>
+                <div class="text-gray-700 text-truncate-3 mb-4">
+                    ${textContent}
+                </div>
+                <div class="code-preview p-3 border border-gray-200 text-truncate-2 text-gray-800 mb-4">
+                    ${codePreview}
+                </div>
+                <div class="flex justify-end">
+                    <button class="text-xiyou-blue hover:text-xiyou-red transition-colors flex items-center" onclick="viewResourceDetail(${resource.id})">
+                        <i class="fa fa-eye mr-1"></i>
+                        <span>查看详情</span>
+                    </button>
+                </div>
+            `;
+
+            resourceList.appendChild(resourceItem);
+        });
+
+        // 代码高亮初始化
+        hljs.highlightAll();
+    }
+
+    /**
+     * 更新分页控件状态
+     */
+    function updatePagination() {
+        // 更新页码信息
+        pageInfo.textContent = `第 ${currentPage} 页 / 共 ${totalPages} 页`;
+
+        // 禁用/启用上一页
+        prevPage.disabled = currentPage <= 1;
+
+        // 禁用/启用下一页
+        nextPage.disabled = currentPage >= totalPages;
+    }
+
+    /**
+     * 搜索资源（防抖处理）
+     */
+    const searchResources = debounce(function() {
+        currentKeyword = searchInput.value.trim();
+        currentPage = 1; // 搜索时重置到第一页
+        loadResourceList();
+    }, 500);
+
+    /**
+     * 查看资源详情（占位函数，可后续扩展）
+     */
+    async function viewResourceDetail(resourceId) {
+        try {
+            // 1. 调用增加浏览量接口（POST请求）
+            await requestApi(RESOURCE_INCR_VIEW_API, 'POST', { id: resourceId });
+            // 2. 接口调用成功后跳转详情页
+            window.location.href = `/page/resource-detail?id=${resourceId}`;
+        } catch (err) {
+            // 接口调用失败也不影响跳转（保证用户体验）
+            console.error('增加浏览量失败：', err);
+            showToast('浏览量更新失败，但不影响查看详情', 'warning');
+            window.location.href = `/page/resource-detail?id=${resourceId}`;
+        }
+    }
+    // ========== 事件绑定 ==========
+    window.addEventListener('load', initPage);
+
+    // 搜索按钮点击
+    searchBtn.addEventListener('click', searchResources);
+
+    // 搜索输入框回车触发搜索
+    searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            searchResources();
+        }
+    });
+
+    // 搜索输入框实时搜索（防抖）
+    searchInput.addEventListener('input', searchResources);
+
+    // 重置搜索
+    resetSearchBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        currentKeyword = '';
+        currentPage = 1;
+        loadResourceList();
+        showToast('搜索条件已重置', 'success');
+    });
+
+    // 上一页
+    prevPage.addEventListener('click', () => {
+        if (currentPage > 1) {
+            currentPage--;
+            loadResourceList();
+            // 滚动到列表顶部
+            window.scrollTo({ top: resourceList.offsetTop - 20, behavior: 'smooth' });
+        }
+    });
+
+    // 下一页
+    nextPage.addEventListener('click', () => {
+        if (currentPage < totalPages) {
+            currentPage++;
+            loadResourceList();
+            window.scrollTo({ top: resourceList.offsetTop - 20, behavior: 'smooth' });
+        }
+    });
+    function renderResourceList(resources) {
+        // 清空列表
+        resourceList.innerHTML = '';
+
+        // 遍历生成资源项
+        resources.forEach(resource => {
+            const resourceItem = document.createElement('div');
+            resourceItem.className = 'bg-white rounded-xl shadow-sm p-6 card-hover';
+
+            // 格式化发布时间
+            const publishTime = formatTime(resource.publish_time);
+
+            // 截取代码预览
+            const codePreview = truncateCode(resource.code_content);
+
+            // 资源项HTML（转义特殊字符避免XSS）
+            const title = resource.title ? resource.title.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '无标题';
+            const author = resource.author ? resource.author.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '未知作者';
+            const textContent = resource.text_content ? resource.text_content.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '无描述信息';
+
+            // ========== 核心修改：提取计数字段（兼容空值） ==========
+            const likeCount = resource.like_count || 0;    // 点赞量（默认0）
+            const viewCount = resource.view_count || 0;    // 浏览量（默认0）
+            const commentCount = resource.comment_count || 0; // 评论量（默认0）
+
+            // 资源项HTML（新增：点赞/浏览/评论量展示）
+            resourceItem.innerHTML = `
+                <div class="flex justify-between items-start mb-4">
+                   <h3 class="text-lg md:text-xl font-bold text-xiyou-blue hover:text-xiyou-red transition-colors cursor-pointer"onclick="viewResourceDetail(${resource.id})">${title}</h3>
+                    <span class="text-xs text-gray-400">${publishTime}</span>
+                </div>
+                <div class="flex flex-wrap items-center mb-4 text-sm text-gray-600 gap-4">
+                    <!-- 原有作者/时间 -->
+                    <span class="flex items-center">
+                        <i class="fa fa-user-o mr-1 text-xiyou-blue"></i>
+                        <span>${author}</span>
+                    </span>
+                    <span class="flex items-center">
+                        <i class="fa fa-calendar-o mr-1 text-xiyou-blue"></i>
+                        <span>${publishTime}</span>
+                    </span>
+                    <!-- ========== 新增：点赞量 ========== -->
+                    <span class="flex items-center">
+                        <i class="fa fa-thumbs-up mr-1 text-xiyou-blue"></i>
+                        <span>${likeCount}</span>
+                    </span>
+                    <!-- ========== 新增：浏览量 ========== -->
+                    <span class="flex items-center">
+                        <i class="fa fa-eye mr-1 text-xiyou-blue"></i>
+                        <span>${viewCount}</span>
+                    </span>
+                    <!-- ========== 新增：评论量 ========== -->
+                    <span class="flex items-center">
+                        <i class="fa fa-comment-o mr-1 text-xiyou-blue"></i>
+                        <span>${commentCount}</span>
+                    </span>
+                </div>
+                <div class="text-gray-700 text-truncate-3 mb-4">
+                    ${textContent}
+                </div>
+                <div class="code-preview p-3 border border-gray-200 text-truncate-2 text-gray-800 mb-4">
+                    ${codePreview}
+                </div>
+                <div class="flex justify-end">
+                    <button class="text-xiyou-blue hover:text-xiyou-red transition-colors flex items-center" onclick="viewResourceDetail(${resource.id})">
+                        <i class="fa fa-eye mr-1"></i>
+                        <span>查看详情</span>
+                    </button>
+                </div>
+            `;
+
+            resourceList.appendChild(resourceItem);
+        });
+
+        // 代码高亮初始化
+        hljs.highlightAll();
+    }
+    // 退出登录
+    logoutBtn.addEventListener('click', () => {
+        if (confirm('确定要退出登录吗？')) {
+            logoutAndRedirect();
+            showToast('退出登录成功', 'success');
+        }
+    });
+
+    // 移动端菜单（占位）
+    document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+        alert('移动端菜单功能可后续完善');
+    });
+</script>
+</body>
+</html>

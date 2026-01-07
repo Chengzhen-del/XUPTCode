@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <script src="../static/js/config.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>西邮代码库 - 校园版GitHub | 西安邮电大学</title>
+    <!-- Tailwind CSS 快速样式库（无需本地安装） -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 图标库 -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+
+    <!-- 自定义配置：西邮校色（主色：邮电蓝 #00529B，辅助色：科技红 #E63946） -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        xiyou: {
+                            blue: '#00529B',    // 西邮主蓝
+                            red: '#E63946',     // 西邮辅助红
+                            light: '#E8F4FD',   // 浅蓝背景
+                        },
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            },
+        }
+    </script>
+
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .card-hover {
+                transition: all 0.3s ease;
+            }
+            .card-hover:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 25px -5px rgba(0, 82, 155, 0.1);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+<!-- 导航栏 -->
+<header class="sticky top-0 z-50 bg-white shadow-sm">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+            <!-- 左侧Logo + 名称 -->
+            <div class="flex items-center">
+                <!-- 西邮简化Logo（文字版） -->
+                <div class="text-xiyou-blue font-bold text-2xl mr-4">
+                    XUPT<span class="text-xiyou-red">Code</span>
+                </div>
+                <nav class="hidden md:flex space-x-8">
+                    <a href="/page/index" class="text-xiyou-blue font-medium hover:text-xiyou-red transition-colors">首页</a>
+                    <a href="/page/resource-list" class="text-gray-600 font-medium hover:text-xiyou-blue transition-colors">资源库</a>
+                    <a href="/page/upload" class="text-gray-600 font-medium hover:text-xiyou-blue transition-colors">上传资源</a>
+                    <a href="/page/first" class="text-gray-600 font-medium hover:text-xiyou-blue transition-colors">主页</a>
+                    <a href="/page/ai" class="text-gray-600 font-medium hover:text-xiyou-blue transition-colors">AI</a>
+                </nav>
+            </div>
+
+            <!-- 右侧功能入口 -->
+            <div class="flex items-center space-x-4">
+                <!-- 搜索框（移动端隐藏） -->
+                <div class="hidden md:block relative">
+                    <input type="text" placeholder="搜索课程设计/作业..."
+                           class="pl-10 pr-4 py-2 rounded-md border border-gray-200 focus:outline-none focus:ring-2 focus:ring-xiyou-blue/30 focus:border-xiyou-blue w-64">
+                    <i class="fa fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                </div>
+
+                <!-- 上传按钮 -->
+                <a href="/page/upload" class="bg-xiyou-blue text-white px-4 py-2 rounded-md hover:bg-xiyou-blue/90 transition-colors flex items-center">
+                    <i class="fa fa-upload mr-2"></i>
+                    <span class="hidden sm:inline">上传资源</span>
+                </a>
+
+                <!-- ========== 核心修改：拆分登录/用户信息区域 ========== -->
+                <!-- 登录/注册按钮：未登录时显示，登录后隐藏 -->
+                <a id="loginRegisterBtn" href="" data-page="LOGIN" class="text-gray-700 hover:text-xiyou-blue transition-colors font-medium">
+                    登录/注册
+                </a>
+
+                <!-- 用户信息区域：登录后显示，未登录时隐藏 -->
+                <div id="userInfoArea" class="hidden flex items-center space-x-3">
+                    <!-- 头像容器：支持图片/首字母占位 -->
+                    <div class="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-xiyou-blue font-bold bg-xiyou-light">
+                        <img id="userAvatar" src="" alt="用户头像" class="w-full h-full object-cover hidden" />
+                        <span id="userInitial">U</span>
+                    </div>
+                    <!-- 用户名 -->
+                    <span id="userName" class="text-gray-700 font-medium hidden sm:inline">用户名</span>
+                    <!-- 退出登录按钮 -->
+                    <button id="logoutBtn" class="text-gray-600 hover:text-xiyou-red transition-colors flex items-center text-sm">
+                        <i class="fa fa-sign-out mr-1"></i>
+                        <span class="hidden sm:inline">退出</span>
+                    </button>
+                </div>
+
+                <!-- 移动端菜单按钮 -->
+                <button class="md:hidden text-gray-700 hover:text-xiyou-blue">
+                    <i class="fa fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- 英雄区（核心视觉） -->
+<section class="bg-xiyou-light py-16 md:py-24">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-3xl mx-auto text-center">
+            <h1 class="text-[clamp(2rem,5vw,3.5rem)] font-bold text-xiyou-blue text-shadow mb-6">
+                西邮代码库 <span class="text-xiyou-red">XUPTCode</span>
+            </h1>
+            <p class="text-xl text-gray-700 mb-8">
+                西安邮电大学专属代码交易平台 · 课程设计/课程作业/实验报告 · 学生互助学习社区
+            </p>
+
+            <!-- 核心搜索框 -->
+            <div class="relative max-w-2xl mx-auto">
+                <input type="text" placeholder="搜索：Python课设 | 通信原理作业 | 单片机设计..."
+                       class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-xiyou-blue/30 focus:border-xiyou-blue text-lg">
+                <i class="fa fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl"></i>
+                <button class="absolute right-1 top-1/2 -translate-y-1/2 bg-xiyou-blue text-white px-6 py-2 rounded-md hover:bg-xiyou-blue/90 transition-colors">
+                    搜索
+                </button>
+            </div>
+
+            <!-- 特色标签 -->
+            <div class="flex flex-wrap justify-center gap-3 mt-8">
+                <span class="px-3 py-1 bg-white rounded-full text-sm text-gray-700 shadow-sm">计算机学院</span>
+                <span class="px-3 py-1 bg-white rounded-full text-sm text-gray-700 shadow-sm">通信与信息工程学院</span>
+                <span class="px-3 py-1 bg-white rounded-full text-sm text-gray-700 shadow-sm">电子工程学院</span>
+                <span class="px-3 py-1 bg-white rounded-full text-sm text-gray-700 shadow-sm">自动化学院</span>
+                <span class="px-3 py-1 bg-white rounded-full text-sm text-gray-700 shadow-sm">人工智能学院</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 学院分类区 -->
+<section class="py-16">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-12">
+            <h2 class="text-3xl font-bold text-gray-800 mb-3">按学院浏览资源</h2>
+            <p class="text-gray-600 max-w-2xl mx-auto">西邮核心学院专属资源分类，快速找到对应专业的课程设计和作业</p>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+            <!-- 计算机学院 -->
+            <div class="bg-white rounded-xl shadow-sm p-6 text-center card-hover">
+                <div class="w-16 h-16 bg-xiyou-light rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa fa-laptop text-xiyou-blue text-2xl"></i>
+                </div>
+                <h3 class="font-bold text-lg text-gray-800 mb-2">计算机学院</h3>
+                <p class="text-gray-600 text-sm mb-4">Python/Java/大数据/软件工程</p>
+                <a href="#" class="text-xiyou-blue hover:text-xiyou-red transition-colors font-medium">
+                    查看资源 <i class="fa fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+
+            <!-- 通信与信息工程学院 -->
+            <div class="bg-white rounded-xl shadow-sm p-6 text-center card-hover">
+                <div class="w-16 h-16 bg-xiyou-light rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa fa-wifi text-xiyou-blue text-2xl"></i>
+                </div>
+                <h3 class="font-bold text-lg text-gray-800 mb-2">通信工程学院</h3>
+                <p class="text-gray-600 text-sm mb-4">通信原理/移动通信/光纤通信</p>
+                <a href="#" class="text-xiyou-blue hover:text-xiyou-red transition-colors font-medium">
+                    查看资源 <i class="fa fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+
+            <!-- 电子工程学院 -->
+            <div class="bg-white rounded-xl shadow-sm p-6 text-center card-hover">
+                <div class="w-16 h-16 bg-xiyou-light rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa fa-microchip text-xiyou-blue text-2xl"></i>
+                </div>
+                <h3 class="font-bold text-lg text-gray-800 mb-2">电子工程学院</h3>
+                <p class="text-gray-600 text-sm mb-4">单片机/电路设计/嵌入式</p>
+                <a href="#" class="text-xiyou-blue hover:text-xiyou-red transition-colors font-medium">
+                    查看资源 <i class="fa fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+
+            <!-- 自动化学院 -->
+            <div class="bg-white rounded-xl shadow-sm p-6 text-center card-hover">
+                <div class="w-16 h-16 bg-xiyou-light rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa fa-cogs text-xiyou-blue text-2xl"></i>
+                </div>
+                <h3 class="font-bold text-lg text-gray-800 mb-2">自动化学院</h3>
+                <p class="text-gray-600 text-sm mb-4">PLC/自动控制/机器人</p>
+                <a href="#" class="text-xiyou-blue hover:text-xiyou-red transition-colors font-medium">
+                    查看资源 <i class="fa fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+
+            <!-- 人工智能学院 -->
+            <div class="bg-white rounded-xl shadow-sm p-6 text-center card-hover">
+                <div class="w-16 h-16 bg-xiyou-light rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa fa-brain text-xiyou-blue text-2xl"></i>
+                </div>
+                <h3 class="font-bold text-lg text-gray-800 mb-2">人工智能学院</h3>
+                <p class="text-gray-600 text-sm mb-4">机器学习/深度学习/CV</p>
+                <a href="#" class="text-xiyou-blue hover:text-xiyou-red transition-colors font-medium">
+                    查看资源 <i class="fa fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 热门资源展示区 -->
+<section class="bg-gray-50 py-16">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center mb-10">
+            <div>
+                <h2 class="text-3xl font-bold text-gray-800 mb-2">热门课程资源</h2>
+                <p class="text-gray-600">西邮学生最常下载的课程设计和作业</p>
+            </div>
+            <a href="#" class="text-xiyou-blue hover:text-xiyou-red transition-colors font-medium">
+                查看全部 <i class="fa fa-angle-right ml-1"></i>
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <!-- 资源卡片1 -->
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden card-hover">
+                <div class="p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="px-2 py-1 bg-xiyou-light text-xiyou-blue text-xs rounded">计算机学院</span>
+                        <span class="text-xiyou-red font-bold">¥5.00</span>
+                    </div>
+                    <h3 class="font-bold text-xl text-gray-800 mb-2">Python课程设计-图书管理系统</h3>
+                    <p class="text-gray-600 text-sm mb-4">基于Python+Django开发的图书管理系统，含完整源码+数据库+运行说明</p>
+                    <div class="flex items-center text-gray-500 text-sm mb-6">
+                        <span class="flex items-center mr-4"><i class="fa fa-download mr-1"></i> 248</span>
+                        <span class="flex items-center mr-4"><i class="fa fa-star mr-1 text-yellow-400"></i> 4.8</span>
+                        <span class="flex items-center"><i class="fa fa-user mr-1"></i> 计科2201</span>
+                    </div>
+                    <button class="w-full bg-xiyou-blue text-white py-2 rounded-md hover:bg-xiyou-blue/90 transition-colors">
+                        立即购买
+                    </button>
+                </div>
+            </div>
+
+            <!-- 资源卡片2 -->
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden card-hover">
+                <div class="p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="px-2 py-1 bg-xiyou-light text-xiyou-blue text-xs rounded">通信工程学院</span>
+                        <span class="text-xiyou-red font-bold">¥3.00</span>
+                    </div>
+                    <h3 class="font-bold text-xl text-gray-800 mb-2">通信原理实验报告（全12次）</h3>
+                    <p class="text-gray-600 text-sm mb-4">西邮通信原理实验报告完整版，含数据处理、图表、实验总结，格式规范</p>
+                    <div class="flex items-center text-gray-500 text-sm mb-6">
+                        <span class="flex items-center mr-4"><i class="fa fa-download mr-1"></i> 312</span>
+                        <span class="flex items-center mr-4"><i class="fa fa-star mr-1 text-yellow-400"></i> 4.9</span>
+                        <span class="flex items-center"><i class="fa fa-user mr-1"></i> 通信2103</span>
+                    </div>
+                    <button class="w-full bg-xiyou-blue text-white py-2 rounded-md hover:bg-xiyou-blue/90 transition-colors">
+                        立即购买
+                    </button>
+                </div>
+            </div>
+
+            <!-- 资源卡片3 -->
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden card-hover">
+                <div class="p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="px-2 py-1 bg-xiyou-light text-xiyou-blue text-xs rounded">电子工程学院</span>
+                        <span class="text-xiyou-red font-bold">¥8.00</span>
+                    </div>
+                    <h3 class="font-bold text-xl text-gray-800 mb-2">51单片机智能小车设计</h3>
+                    <p class="text-gray-600 text-sm mb-4">基于51单片机的智能小车，含硬件原理图、C语言源码、调试教程</p>
+                    <div class="flex items-center text-gray-500 text-sm mb-6">
+                        <span class="flex items-center mr-4"><i class="fa fa-download mr-1"></i> 189</span>
+                        <span class="flex items-center mr-4"><i class="fa fa-star mr-1 text-yellow-400"></i> 4.7</span>
+                        <span class="flex items-center"><i class="fa fa-user mr-1"></i> 电子2205</span>
+                    </div>
+                    <button class="w-full bg-xiyou-blue text-white py-2 rounded-md hover:bg-xiyou-blue/90 transition-colors">
+                        立即购买
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 快速上传引导区 -->
+<section class="py-16 bg-xiyou-blue/5">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-md p-8 md:p-12">
+            <div class="flex flex-col md:flex-row items-center">
+                <div class="md:w-1/2 mb-8 md:mb-0 md:pr-8">
+                    <h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-4">分享你的课程资源，赚取零花钱</h2>
+                    <p class="text-gray-600 mb-6">上传你的课程设计、作业、实验报告，设置合理价格，其他同学购买后你即可获得收益</p>
+                    <ul class="space-y-2 text-gray-700">
+                        <li class="flex items-center"><i class="fa fa-check text-xiyou-blue mr-2"></i> 仅支持西邮校园邮箱认证</li>
+                        <li class="flex items-center"><i class="fa fa-check text-xiyou-blue mr-2"></i> 平台仅收取10%服务费</li>
+                        <li class="flex items-center"><i class="fa fa-check text-xiyou-blue mr-2"></i> 资源审核通过后上线</li>
+                    </ul>
+                </div>
+                <div class="md:w-1/2">
+                    <div class="bg-xiyou-light rounded-xl p-6 text-center">
+                        <i class="fa fa-cloud-upload text-xiyou-blue text-5xl mb-4"></i>
+                        <h3 class="font-bold text-xl text-gray-800 mb-2">立即上传你的资源</h3>
+                        <p class="text-gray-600 mb-6">支持zip/rar/代码文件/文档等格式</p>
+                        <a href="#" class="inline-block bg-xiyou-red text-white px-6 py-3 rounded-md hover:bg-xiyou-red/90 transition-colors font-medium">
+                            开始上传
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 页脚 -->
+<footer class="bg-gray-800 text-white py-12">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div>
+                <h3 class="text-xl font-bold mb-4">XUPTCode</h3>
+                <p class="text-gray-400 mb-4">西安邮电大学专属代码交易平台，专注于课程资源共享与学习互助</p>
+                <div class="flex space-x-4">
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors"><i class="fa fa-weixin text-xl"></i></a>
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors"><i class="fa fa-github text-xl"></i></a>
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors"><i class="fa fa-qq text-xl"></i></a>
+                </div>
+            </div>
+
+            <div>
+                <h4 class="font-bold mb-4">快速链接</h4>
+                <ul class="space-y-2 text-gray-400">
+                    <li><a href="#" class="hover:text-white transition-colors">首页</a></li>
+                    <li><a href="#" class="hover:text-white transition-colors">资源库</a></li>
+                    <li><a href="#" class="hover:text-white transition-colors">上传资源</a></li>
+                    <li><a href="#" class="hover:text-white transition-colors">用户中心</a></li>
+                </ul>
+            </div>
+
+            <div>
+                <h4 class="font-bold mb-4">学院分类</h4>
+                <ul class="space-y-2 text-gray-400">
+                    <li><a href="#" class="hover:text-white transition-colors">计算机学院</a></li>
+                    <li><a href="#" class="hover:text-white transition-colors">通信工程学院</a></li>
+                    <li><a href="#" class="hover:text-white transition-colors">电子工程学院</a></li>
+                    <li><a href="#" class="hover:text-white transition-colors">人工智能学院</a></li>
+                </ul>
+            </div>
+
+            <div>
+                <h4 class="font-bold mb-4">校园须知</h4>
+                <ul class="space-y-2 text-gray-400">
+                    <li><a href="#" class="hover:text-white transition-colors">用户协议</a></li>
+                    <li><a href="#" class="hover:text-white transition-colors">版权声明</a></li>
+                    <li><a href="#" class="hover:text-white transition-colors">学术诚信</a></li>
+                    <li><a href="#" class="hover:text-white transition-colors">联系我们</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+            <p>© 2026 XUPTCode - 西安邮电大学校园代码库 | 仅限校内学习交流使用，严禁抄袭作业</p>
+        </div>
+    </div>
+</footer>
+
+<!-- 核心JS：登录状态判断 + 动态渲染用户信息 -->
+<script>
+    // ========== 统一配置：API和页面路径 ==========
+    const CONFIG = {
+        // API配置
+        API: {
+            BASE_URL: AppConfig.API_BASE_URL,  // 后端服务地址
+            VERIFY_TOKEN: '/api/auth/verify-token', // Token验证接口
+            LOGOUT: '/staff/logout'              // 退出登录接口
+        },
+        // 页面路径配置
+        PAGES: {
+            LOGIN: '/page/login',               // 登录页
+            REGISTER: '/page/register',         // 注册页
+            FIRST: '/page/first'                // 用户首页
+        },
+        // 存储配置
+        STORAGE: {
+            KEY: 'xuptcode_user_info'            // 用户信息存储key
+        }
+    };
+    
+    // 向后兼容的常量（保留原有变量名）
+    const API_BASE_URL = CONFIG.API.BASE_URL;
+    const VERIFY_TOKEN_API = CONFIG.API.VERIFY_TOKEN;
+    const LOGOUT_API = CONFIG.API.LOGOUT;
+    const STORAGE_KEY = CONFIG.STORAGE.KEY;
+    const LOGIN_PAGE_URL = CONFIG.PAGES.LOGIN;
+
+    // ========== DOM元素 ==========
+    const loginRegisterBtn = document.getElementById('loginRegisterBtn'); // 登录/注册按钮
+    const userInfoArea = document.getElementById('userInfoArea'); // 用户信息区域
+    const userAvatar = document.getElementById('userAvatar'); // 用户头像
+    const userInitial = document.getElementById('userInitial'); // 首字母占位
+    const userName = document.getElementById('userName'); // 用户名
+    const logoutBtn = document.getElementById('logoutBtn'); // 退出按钮
+    const menuBtn = document.querySelector('button.md\\:hidden'); // 移动端菜单按钮
+    const buyBtns = document.querySelectorAll('button.bg-xiyou-blue'); // 购买按钮
+
+    // 安全检查：确保关键DOM元素存在
+    if (!loginRegisterBtn || !userInfoArea || !userName || !logoutBtn) {
+        console.error('关键DOM元素未找到，登录状态检测可能无法正常工作');
+    }
+
+    // ========== 状态控制 ==========
+    let isCheckingLogin = false; // 防止重复检查登录状态
+    let isLoggingOut = false; // 防止重复退出
+
+    // ========== 工具函数 ==========
+    /**
+     * 从本地存储获取用户信息（含token）
+     */
+    function getLocalUserInfo() {
+        const userInfoStr = localStorage.getItem(STORAGE_KEY) || sessionStorage.getItem(STORAGE_KEY);
+        if (!userInfoStr) return null;
+
+        try {
+            const userInfo = JSON.parse(userInfoStr);
+            // 校验核心字段：必须有token
+            if (!userInfo.token) return null;
+            return userInfo;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    /**
+     * 清除本地存储的用户信息
+     */
+    function clearLocalUserInfo() {
+        localStorage.removeItem(STORAGE_KEY);
+        sessionStorage.removeItem(STORAGE_KEY);
+    }
+
+    /**
+     * 调用/api/auth/verify-token接口验证登录状态
+     */
+    async function checkLoginStatus() {
+        if (isCheckingLogin) return;
+        isCheckingLogin = true;
+
+        try {
+            // 1. 先取本地存储的token
+            const localUser = getLocalUserInfo();
+            if (!localUser) {
+                // 无本地token，显示登录按钮
+                showLoginUI();
+                return;
+            }
+
+            // 2. 调用接口验证token（后端接口：GET /api/auth/verify-token）
+            const response = await fetch(`${CONFIG.API.BASE_URL}${CONFIG.API.VERIFY_TOKEN}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${localUser.token}`,
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include' // 跨域携带凭证
+            });
+
+            // 后端返回格式：{code: 200, message: "success", data: {uuid: ...}}
+            if (response.ok) {
+                const result = await response.json();
+                if (result.code === 200) {
+                    // Token有效，隐藏登录按钮，显示用户信息
+                    if (localUser.username || localUser.avatar_url) {
+                        renderUserInfo(localUser);
+                    } else {
+                        // 如果没有详细信息，使用默认显示
+                        if (userName) userName.textContent = '用户';
+                        if (userInitial) userInitial.textContent = 'U';
+                        if (userAvatar) userAvatar.classList.add('hidden');
+                        if (userInitial) userInitial.classList.remove('hidden');
+                    }
+                    showUserInfoUI();
+                    return;
+                }
+            }
+
+            // 接口返回失败（token过期/无效或其他错误状态码）
+            clearLocalUserInfo();
+            showLoginUI();
+        } catch (error) {
+            // 网络错误/接口异常，默认显示登录按钮
+            console.error('检查登录状态失败：', error);
+            showLoginUI();
+        } finally {
+            isCheckingLogin = false;
+        }
+    }
+
+    /**
+     * 渲染用户信息到页面
+     * @param {Object} userData - 用户信息（可以是接口返回或本地存储的）
+     */
+    function renderUserInfo(userData) {
+        if (!userData) return;
+
+        // 1. 设置用户名
+        const username = userData.username || '未知用户';
+        if (userName) userName.textContent = username;
+
+        // 2. 设置头像/首字母
+        if (userData.avatar_url && userAvatar && userInitial) {
+            // 有头像URL：显示图片，隐藏首字母
+            const fullAvatarUrl = userData.avatar_url.startsWith('http') 
+                ? userData.avatar_url 
+                : `${CONFIG.API.BASE_URL}${userData.avatar_url}`;
+            userAvatar.src = fullAvatarUrl;
+            userAvatar.classList.remove('hidden');
+            userInitial.classList.add('hidden');
+        } else if (userInitial) {
+            // 无头像：显示首字母，隐藏图片
+            const initial = username.charAt(0).toUpperCase();
+            userInitial.textContent = initial;
+            if (userAvatar) userAvatar.classList.add('hidden');
+            userInitial.classList.remove('hidden');
+        }
+    }
+
+    /**
+     * 显示登录/注册按钮，隐藏用户信息
+     */
+    function showLoginUI() {
+        if (loginRegisterBtn) loginRegisterBtn.classList.remove('hidden');
+        if (userInfoArea) {
+            userInfoArea.classList.remove('flex');
+            userInfoArea.classList.add('hidden');
+        }
+    }
+
+    /**
+     * 显示用户信息，隐藏登录/注册按钮
+     */
+    function showUserInfoUI() {
+        if (loginRegisterBtn) loginRegisterBtn.classList.add('hidden');
+        if (userInfoArea) {
+            userInfoArea.classList.remove('hidden');
+            userInfoArea.classList.add('flex');
+        }
+    }
+
+    /**
+     * 退出登录逻辑
+     */
+    async function handleLogout() {
+        if (isLoggingOut) return;
+        if (!confirm('确定要退出登录吗？')) return;
+
+        const localUser = getLocalUserInfo();
+        if (!localUser) {
+            // 无本地信息，直接跳转登录页
+            clearLocalUserInfo();
+            window.location.href = LOGIN_PAGE_URL;
+            return;
+        }
+
+        isLoggingOut = true;
+        try {
+            // 调用退出登录接口
+            await fetch(`${CONFIG.API.BASE_URL}${CONFIG.API.LOGOUT}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localUser.token}`,
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include'
+            });
+
+            // 清除本地信息，刷新页面/跳转
+            clearLocalUserInfo();
+            alert('退出登录成功！');
+            window.location.reload(); // 刷新页面，自动显示登录按钮
+        } catch (error) {
+            console.error('退出登录失败：', error);
+            alert('退出登录失败，请重试！');
+        } finally {
+            isLoggingOut = false;
+        }
+    }
+
+    // ========== 原有交互逻辑 ==========
+    // 平滑滚动
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth' });
+            }
+        });
+    });
+
+    // 移动端菜单按钮
+    menuBtn.addEventListener('click', function() {
+        alert('移动端菜单功能可后续对接后端完善');
+    });
+
+    // 购买按钮提示
+    buyBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            // 未登录时点击购买，提示登录
+            if (loginRegisterBtn.classList.contains('hidden')) {
+                alert('购买功能开发中，敬请期待！');
+            } else {
+                alert('请先登录后再购买资源！');
+                window.location.href = LOGIN_PAGE_URL;
+            }
+        });
+    });
+
+    // ========== 事件绑定 ==========
+    logoutBtn.addEventListener('click', handleLogout); // 退出登录按钮
+
+    // ========== 初始化页面链接 ==========
+    function initPageLinks() {
+        // 为所有带data-page属性的链接设置href
+        document.querySelectorAll('a[data-page]').forEach(link => {
+            const pageKey = link.getAttribute('data-page');
+            if (CONFIG.PAGES[pageKey]) {
+                link.href = CONFIG.PAGES[pageKey];
+            }
+        });
+    }
+
+    // ========== 页面初始化 ==========
+    // DOM加载完成后立即检查登录状态（不需要等待所有资源加载）
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            initPageLinks(); // 初始化链接
+            checkLoginStatus(); // 检查登录状态
+        });
+    } else {
+        // DOM已经加载完成，立即执行
+        initPageLinks();
+        checkLoginStatus();
+    }
+</script>
+</body>
+</html>

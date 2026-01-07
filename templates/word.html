@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <script src="../static/js/config.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的专属信件</title>
+    <style>
+        /* 全局样式重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #f5f0e8; /* 浅米色背景，营造温馨感 */
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: "Ma Shan Zheng", "SimSun", "Microsoft Yahei", cursive; /* 手写字体+衬线字体 */
+        }
+
+        /* 页面标题 */
+        .page-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .page-title {
+            font-size: 28px;
+            color: #8b4513;
+            margin-bottom: 8px;
+            font-weight: normal;
+        }
+
+        .page-subtitle {
+            font-size: 14px;
+            color: #a0522d;
+            opacity: 0.8;
+        }
+
+        /* 加载状态 */
+        .loading-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 400px;
+            width: 100%;
+            max-width: 700px;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #e8d5b7;
+            border-top: 3px solid #8b4513;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        .loading-text {
+            font-size: 16px;
+            color: #8b4513;
+            opacity: 0.8;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 错误提示 */
+        .error-wrap {
+            width: 100%;
+            max-width: 700px;
+            padding: 25px;
+            background-color: #fff0f0;
+            border: 1px solid #ffcccc;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error-icon {
+            font-size: 24px;
+            color: #e74c3c;
+            margin-bottom: 10px;
+        }
+
+        .error-text {
+            font-size: 16px;
+            color: #e74c3c;
+            margin-bottom: 15px;
+        }
+
+        .error-btn {
+            padding: 8px 20px;
+            background-color: #8b4513;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: "Microsoft Yahei";
+            transition: background-color 0.3s;
+        }
+
+        .error-btn:hover {
+            background-color: #a0522d;
+        }
+
+        /* 空数据提示 */
+        .empty-wrap {
+            width: 100%;
+            max-width: 700px;
+            padding: 60px 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: none;
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            color: #d3d3d3;
+            margin-bottom: 15px;
+        }
+
+        .empty-text {
+            font-size: 18px;
+            color: #777;
+            margin-bottom: 20px;
+        }
+
+        /* 核心：信纸样式 */
+        .letter-wrap {
+            width: 100%;
+            max-width: 700px;
+            background-color: #fffbf0; /* 泛黄的信纸底色 */
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1), 0 2px 5px rgba(0,0,0,0.05);
+            padding: 40px 50px;
+            /* 仿信纸横线纹理 */
+            background-image:
+                    linear-gradient(transparent 95%, #e8d5b7 95%),
+                    linear-gradient(to right, #f5f0e8 1px, transparent 1px);
+            background-size: 100% 32px, 20px 100%;
+            line-height: 32px;
+            display: none; /* 初始隐藏，获取数据后显示 */
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 信纸装饰角标 */
+        .letter-wrap::before {
+            content: "";
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 60px;
+            height: 60px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%23e8d5b7' d='M10 10 L90 10 L90 90 Z'/%3E%3C/svg%3E");
+            background-size: cover;
+            opacity: 0.3;
+            transform: rotate(45deg);
+        }
+
+        /* 信件内容 */
+        .letter-content {
+            font-size: 20px;
+            color: #333;
+            white-space: pre-wrap; /* 保留后端返回的换行符 */
+            word-wrap: break-word;
+            margin-bottom: 60px;
+            letter-spacing: 0.5px;
+            line-height: 1.8;
+        }
+
+        /* 信件落款区域 */
+        .letter-footer {
+            text-align: right;
+            margin-right: 20px;
+        }
+
+        .letter-signature {
+            font-size: 18px;
+            color: #8b4513;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .letter-date {
+            font-size: 14px;
+            color: #666;
+            opacity: 0.8;
+        }
+
+        /* 响应式适配 */
+        @media (max-width: 768px) {
+            .letter-wrap {
+                padding: 30px 25px;
+                background-size: 100% 28px, 15px 100%;
+                line-height: 28px;
+            }
+
+            .letter-content {
+                font-size: 18px;
+                margin-bottom: 40px;
+            }
+
+            .page-title {
+                font-size: 24px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .letter-wrap {
+                padding: 20px 15px;
+                border-radius: 6px;
+            }
+
+            .letter-content {
+                font-size: 16px;
+                line-height: 1.6;
+            }
+
+            .letter-signature {
+                font-size: 16px;
+            }
+
+            .page-title {
+                font-size: 20px;
+            }
+        }
+    </style>
+    <!-- 引入手写字体（可选，增强视觉效果） -->
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+</head>
+<body>
+<!-- 页面头部 -->
+<div class="page-header">
+    <h1 class="page-title">✉️ 我的专属信件</h1>
+    <p class="page-subtitle">Letter For You</p>
+</div>
+
+<!-- 加载状态 -->
+<div class="loading-wrap" id="loadingWrap">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">正在加载信件内容...</div>
+</div>
+
+<!-- 错误提示 -->
+<div class="error-wrap" id="errorWrap">
+    <div class="error-icon"><i class="fas fa-exclamation-circle"></i></div>
+    <div class="error-text" id="errorText">加载失败，请稍后重试</div>
+    <button class="error-btn" onclick="refreshPage()">重新加载</button>
+</div>
+
+<!-- 空数据提示 -->
+<div class="empty-wrap" id="emptyWrap">
+    <div class="empty-icon"><i class="fas fa-envelope-open"></i></div>
+    <div class="empty-text">暂无信件内容</div>
+    <button class="error-btn" onclick="goBack()">返回首页</button>
+</div>
+
+<!-- 核心：信纸容器 -->
+<div class="letter-wrap" id="letterWrap">
+    <div class="letter-content" id="letterContent"></div>
+    <div class="letter-footer">
+        <div class="letter-signature" id="letterSignature"></div>
+        <div class="letter-date" id="letterDate"></div>
+    </div>
+</div>
+
+<script>
+    // ========== 统一配置：API和页面路径 ==========
+    const CONFIG = {
+        // API配置
+        API: {
+            BASE_URL: AppConfig.API_BASE_URL,  // 后端服务地址
+            GET_LETTER: '/get-letter',           // 获取信件接口（GET，注意路由没有前导斜杠）
+            TIMEOUT: 10000                       // 请求超时时间（10秒）
+        },
+        // 页面路径配置
+        PAGES: {
+            INDEX: '/page/index',               // 首页
+            LOGIN: '/page/login'                // 登录页
+        },
+        // 存储配置
+        STORAGE: {
+            KEY: 'xuptcode_user_info'            // 用户信息存储key（和登录页一致）
+        }
+    };
+
+    // 页面加载完成后立即请求数据
+    window.addEventListener('DOMContentLoaded', async () => {
+        await fetchLetterData();
+    });
+
+    /**
+     * 核心函数：获取信件数据（从后端）
+     */
+    async function fetchLetterData() {
+        // 获取DOM元素
+        const loadingWrap = document.getElementById('loadingWrap');
+        const errorWrap = document.getElementById('errorWrap');
+        const emptyWrap = document.getElementById('emptyWrap');
+        const letterWrap = document.getElementById('letterWrap');
+        const errorText = document.getElementById('errorText');
+        const letterContent = document.getElementById('letterContent');
+        const letterSignature = document.getElementById('letterSignature');
+        const letterDate = document.getElementById('letterDate');
+
+        try {
+            // 1. 从localStorage获取登录时存储的Token（和登录页key一致）
+            const userInfoStr = localStorage.getItem(CONFIG.STORAGE.KEY) || sessionStorage.getItem(CONFIG.STORAGE.KEY);
+            let token = '';
+            if (userInfoStr) {
+                try {
+                    const userInfo = JSON.parse(userInfoStr);
+                    token = userInfo.token || '';
+                } catch (e) {
+                    console.error('解析用户信息失败：', e);
+                }
+            }
+
+            // 2. 校验Token是否存在
+            if (!token) {
+                loadingWrap.style.display = 'none';
+                errorText.innerText = '登录状态失效，请重新登录';
+                errorWrap.style.display = 'block';
+                return;
+            }
+
+            // 3. 构造请求（GET方法，携带Token）
+            // 注意：后端路由是 "get-letter"（没有前导斜杠，可能是代码错误，但按实际处理）
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), CONFIG.API.TIMEOUT);
+
+            const response = await fetch(`${CONFIG.API.BASE_URL}${CONFIG.API.GET_LETTER}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`, // Token格式：Bearer + 空格 + token
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                credentials: 'include',
+                signal: controller.signal // 超时控制
+            });
+
+            clearTimeout(timeoutId); // 清除超时定时器
+
+            // 4. 处理HTTP状态码异常
+            if (!response.ok) {
+                throw new Error(`请求失败 [${response.status}]：${response.statusText}`);
+            }
+
+            // 5. 解析后端返回的JSON数据
+            // 后端返回格式：{Code: 200, Msg: "success", Data: WordResponse}
+            // 注意：使用CommonResponse格式，字段是大写Code/Msg/Data
+            const res = await response.json();
+            console.log('后端返回数据：', res);
+
+            // 6. 校验后端业务码（200为成功）
+            if (res.Code !== 200) {
+                throw new Error(res.Msg || res.message || '获取信件失败');
+            }
+
+            // 7. 提取WordResponse数据（匹配后端结构体）
+            const wordResponse = res.Data;
+            loadingWrap.style.display = 'none';
+
+            // 8. 校验是否有有效信件内容
+            if (!wordResponse || !wordResponse.text) {
+                emptyWrap.style.display = 'block';
+                return;
+            }
+
+            // 9. 渲染信件内容（核心步骤）
+            letterWrap.style.display = 'block';
+            letterContent.innerText = wordResponse.text; // 渲染正文
+            letterSignature.innerText = wordResponse.signature || '未知署名'; // 渲染落款（兜底）
+            letterDate.innerText = wordResponse.date || new Date().toLocaleDateString(); // 渲染日期（兜底）
+
+        } catch (err) {
+            // 异常处理
+            console.error('获取信件失败：', err);
+            loadingWrap.style.display = 'none';
+
+            // 根据错误类型显示不同提示
+            if (err.name === 'AbortError') {
+                errorText.innerText = '请求超时，请检查后端服务';
+            } else if (err.message.includes('Failed to fetch')) {
+                errorText.innerText = '网络异常，无法连接服务器';
+            } else if (err.message.includes('401')) {
+                errorText.innerText = 'Token无效，请重新登录';
+            } else {
+                errorText.innerText = err.message;
+            }
+
+            errorWrap.style.display = 'block';
+        }
+    }
+
+    /**
+     * 刷新页面重新请求
+     */
+    function refreshPage() {
+        window.location.reload();
+    }
+
+    /**
+     * 返回首页（请替换为你的实际首页路径）
+     */
+    function goBack() {
+        window.location.href = CONFIG.PAGES.INDEX; // 返回首页
+    }
+</script>
+</body>
+</html>
