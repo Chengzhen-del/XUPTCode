@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <script src="../static/js/config.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>上传资源 - 西邮代码库 XUPTCode</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 图标库 -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- 代码高亮（优化代码输入体验） -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+    <!-- 西邮校色配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        xiyou: {
+                            blue: '#00529B',    // 西邮主蓝
+                            red: '#E63946',     // 西邮辅助红
+                            light: '#E8F4FD',   // 西邮背景浅蓝
+                        },
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .form-input-error {
+                @apply border-red-500 focus:ring-red-500 focus:border-red-500;
+            }
+            .error-text {
+                @apply text-red-500 text-xs mt-1;
+            }
+            .form-label {
+                @apply block text-sm font-medium text-gray-700 mb-1;
+            }
+            .form-input {
+                @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-xiyou-blue focus:border-xiyou-blue;
+            }
+            .card-hover {
+                transition: all 0.3s ease;
+            }
+            .card-hover:hover {
+                box-shadow: 0 10px 25px -5px rgba(0, 82, 155, 0.1);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans min-h-screen flex flex-col">
+<!-- 顶部导航栏（和个人中心一致） -->
+<header class="sticky top-0 z-50 bg-white shadow-sm">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+            <!-- 左侧Logo -->
+            <div class="flex items-center">
+                <div class="text-xiyou-blue font-bold text-2xl mr-8">
+                    XUPT<span class="text-xiyou-red">Code</span>
+                </div>
+                <!-- 导航菜单（桌面端） -->
+                <nav class="hidden md:flex space-x-6">
+                    <a href="/page/index" class="text-gray-600 font-medium hover:text-xiyou-blue transition-colors">首页</a>
+                    <a href="/page/resource-list" class="text-gray-600 font-medium hover:text-xiyou-blue transition-colors">资源库</a>
+                    <a href="/page/upload" class="text-xiyou-blue font-medium hover:text-xiyou-red transition-colors">上传资源</a>
+                    <a href="/page/first" class="text-gray-600 font-medium hover:text-xiyou-blue transition-colors">主页</a>
+                    <a href="/page/ai" class="text-gray-600 font-medium hover:text-xiyou-blue transition-colors">AI</a>
+                </nav>
+            </div>
+
+            <!-- 右侧用户信息 + 退出登录 -->
+            <div class="flex items-center space-x-4">
+                <!-- 简化版用户信息 -->
+                <div class="hidden md:flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-xiyou-blue font-bold bg-xiyou-light">
+                        <span id="userInitial">U</span>
+                    </div>
+                    <div class="text-left">
+                        <div class="text-sm font-medium text-gray-800" id="navUsername">用户名</div>
+                        <div class="text-xs text-gray-500">个人中心</div>
+                    </div>
+                </div>
+
+                <!-- 退出登录按钮 -->
+                <button id="logoutBtn" class="text-gray-600 hover:text-xiyou-red transition-colors flex items-center">
+                    <i class="fa fa-sign-out mr-1"></i>
+                    <span class="hidden sm:inline">退出登录</span>
+                </button>
+
+                <!-- 移动端菜单按钮 -->
+                <button class="md:hidden text-gray-700 hover:text-xiyou-blue" id="mobileMenuBtn">
+                    <i class="fa fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- 面包屑导航 -->
+<section class="bg-white border-b border-gray-200 py-3">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center text-sm">
+            <a href="/page/index" class="text-gray-600 hover:text-xiyou-blue">首页</a>
+            <i class="fa fa-angle-right mx-2 text-gray-400"></i>
+            <span class="text-xiyou-blue font-medium">上传资源</span>
+        </div>
+    </div>
+</section>
+
+<!-- 核心内容区 -->
+<main class="flex-grow py-8 md:py-12">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- 加载状态 -->
+        <div id="loading" class="flex flex-col items-center justify-center py-16 text-gray-600">
+            <i class="fa fa-spinner fa-spin text-3xl mb-4 text-xiyou-blue"></i>
+            <p>正在加载用户信息...</p>
+        </div>
+
+        <!-- 错误状态 -->
+        <div id="error" class="py-16 text-center text-red-500 hidden">
+            <i class="fa fa-exclamation-circle text-3xl mb-4"></i>
+            <p id="errorText">加载失败，请刷新重试</p>
+            <button onclick="initPage()" class="mt-4 px-4 py-2 bg-xiyou-blue text-white rounded-md hover:bg-xiyou-blue/90 transition-colors">
+                重新加载
+            </button>
+        </div>
+
+        <!-- 资源提交表单（初始隐藏） -->
+        <div id="formContent" class="hidden">
+            <div class="bg-white rounded-xl shadow-sm p-6 md:p-8 card-hover">
+                <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                    <i class="fa fa-cloud-upload text-xiyou-blue mr-2"></i>
+                    提交新资源
+                </h3>
+
+                <!-- 资源提交表单 -->
+                <form id="resourceForm" class="space-y-6">
+                    <!-- 标题输入 -->
+                    <div>
+                        <label class="form-label" for="title">资源标题 <span class="text-red-500">*</span></label>
+                        <input
+                                type="text"
+                                id="title"
+                                class="form-input"
+                                placeholder="请输入资源标题（如：Go错误处理最佳实践）"
+                                maxlength="100"
+                        >
+                        <span id="titleError" class="error-text hidden">标题不能为空</span>
+                    </div>
+
+                    <!-- 文本内容输入 -->
+                    <div>
+                        <label class="form-label" for="textContent">文本内容</label>
+                        <textarea
+                                id="textContent"
+                                class="form-input min-h-[150px] resize-y"
+                                placeholder="请输入资源的详细描述、使用说明等文本内容（支持纯文本）"
+                        ></textarea>
+                    </div>
+
+                    <!-- 代码内容输入 -->
+                    <div>
+                        <label class="form-label" for="codeContent">代码内容</label>
+                        <div class="relative">
+                            <textarea
+                                    id="codeContent"
+                                    class="form-input min-h-[200px] font-mono text-sm resize-y"
+                                    placeholder="请输入代码内容（如：完整代码示例、核心代码片段）"
+                            ></textarea>
+                            <!-- 代码高亮提示 -->
+                            <div class="absolute top-2 right-2 text-xs text-gray-400">
+                                <i class="fa fa-code mr-1"></i> 支持代码格式保留
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 提交按钮区域 -->
+                    <div class="pt-4 flex justify-end space-x-4">
+                        <button type="button" id="resetBtn" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors">
+                            <i class="fa fa-refresh mr-1"></i> 重置
+                        </button>
+                        <button type="submit" id="submitBtn" class="px-6 py-2 bg-xiyou-blue text-white rounded-md hover:bg-xiyou-blue/90 transition-colors flex items-center">
+                            <i class="fa fa-paper-plane mr-1"></i> 提交资源
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 提交成功提示卡片（初始隐藏） -->
+            <div id="successCard" class="mt-8 bg-green-50 border border-green-200 rounded-xl p-6 hidden">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <i class="fa fa-check-circle text-2xl text-green-500"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h4 class="text-lg font-medium text-green-800">资源提交成功！</h4>
+                        <div class="mt-2 text-green-700 space-y-2">
+                            <p><span class="font-medium">标题：</span> <span id="successTitle"></span></p>
+                            <p><span class="font-medium">发布时间：</span> <span id="successTime"></span></p>
+                            <p><span class="font-medium">用户ID：</span> <span id="successUserId"></span></p>
+                        </div>
+                        <div class="mt-4">
+                            <a href="/page/resource-list" class="text-xiyou-blue hover:text-xiyou-red transition-colors">
+                                前往资源库查看 <i class="fa fa-angle-right ml-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- 全局提示框 -->
+<div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-lg bg-gray-800 text-white shadow-lg hidden flex items-center">
+    <i class="fa fa-info-circle mr-2" id="toastIcon"></i>
+    <span id="toastText">操作提示</span>
+</div>
+
+<!-- 页脚 -->
+<footer class="bg-gray-800 text-white py-8 mt-auto">
+    <div class="container mx-auto px-4 text-center text-gray-400 text-sm">
+        <p>© 2026 XUPTCode - 西安邮电大学校园代码库 | 仅限校内学习交流使用</p>
+    </div>
+</footer>
+
+<script>
+    // ========== 核心配置 ==========
+    const API_BASE_URL = AppConfig.API_BASE_URL; // 替换为你的后端地址
+    const USER_INFO_API = '/staff/get-info';     // 获取用户信息接口
+    const CREATE_RESOURCE_API = '/resource/create'; // 创建资源接口
+    const STORAGE_KEY = 'xuptcode_user_info';   // Token存储key（和登录页一致）
+    const LOGIN_PAGE_URL = '/page/index';        // 登录页地址
+
+    // ========== DOM元素 ==========
+    // 状态元素
+    const loading = document.getElementById('loading');
+    const error = document.getElementById('error');
+    const errorText = document.getElementById('errorText');
+    const formContent = document.getElementById('formContent');
+
+    // 表单元素
+    const resourceForm = document.getElementById('resourceForm');
+    const title = document.getElementById('title');
+    const textContent = document.getElementById('textContent');
+    const codeContent = document.getElementById('codeContent');
+
+    // 错误提示
+    const titleError = document.getElementById('titleError');
+
+    // 按钮元素
+    const resetBtn = document.getElementById('resetBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    // 用户信息元素
+    const navUsername = document.getElementById('navUsername');
+    const userInitial = document.getElementById('userInitial');
+
+    // 成功提示元素
+    const successCard = document.getElementById('successCard');
+    const successTitle = document.getElementById('successTitle');
+    const successTime = document.getElementById('successTime');
+    const successUserId = document.getElementById('successUserId');
+
+    // 提示框元素
+    const toast = document.getElementById('toast');
+    const toastIcon = document.getElementById('toastIcon');
+    const toastText = document.getElementById('toastText');
+
+    // ========== 工具函数 ==========
+    /**
+     * 获取本地存储的Token
+     */
+    function getToken() {
+        const userInfoStr = localStorage.getItem(STORAGE_KEY) || sessionStorage.getItem(STORAGE_KEY);
+        if (!userInfoStr) return null;
+
+        try {
+            const userInfo = JSON.parse(userInfoStr);
+            return userInfo.token || null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    /**
+     * 显示提示框
+     */
+    function showToast(text, type = 'info', duration = 3000) {
+        if (type === 'success') {
+            toastIcon.className = 'fa fa-check-circle mr-2';
+            toast.classList.add('bg-green-600');
+            toast.classList.remove('bg-red-600', 'bg-gray-800');
+        } else if (type === 'error') {
+            toastIcon.className = 'fa fa-exclamation-circle mr-2';
+            toast.classList.add('bg-red-600');
+            toast.classList.remove('bg-green-600', 'bg-gray-800');
+        } else {
+            toastIcon.className = 'fa fa-info-circle mr-2';
+            toast.classList.add('bg-gray-800');
+            toast.classList.remove('bg-green-600', 'bg-red-600');
+        }
+
+        toastText.textContent = text;
+        toast.classList.remove('hidden');
+
+        setTimeout(() => {
+            toast.classList.add('hidden');
+        }, duration);
+    }
+
+    /**
+     * 发起API请求（带Token认证）
+     */
+    async function requestApi(url, method = 'GET', data = null) {
+        const token = getToken();
+        if (!token) {
+            throw new Error('未检测到登录状态，请重新登录');
+        }
+
+        const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` // 携带Token
+        };
+
+        const requestOptions = {
+            method,
+            headers,
+            credentials: 'include'
+        };
+
+        // POST/PUT请求添加请求体
+        if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+            requestOptions.body = JSON.stringify(data);
+        }
+
+        const response = await fetch(`${API_BASE_URL}${url}`, requestOptions);
+
+        if (!response.ok) {
+            throw new Error(`接口请求失败：${response.status}`);
+        }
+
+        return await response.json();
+    }
+
+    /**
+     * 清除登录状态并跳转
+     */
+    function logoutAndRedirect() {
+        localStorage.removeItem(STORAGE_KEY);
+        sessionStorage.removeItem(STORAGE_KEY);
+        window.location.href = LOGIN_PAGE_URL;
+    }
+
+    /**
+     * 表单验证
+     */
+    function validateForm() {
+        let isValid = true;
+
+        // 标题验证（必填）
+        const titleVal = title.value.trim();
+        if (titleVal === '') {
+            titleError.classList.remove('hidden');
+            title.classList.add('form-input-error');
+            isValid = false;
+        } else {
+            titleError.classList.add('hidden');
+            title.classList.remove('form-input-error');
+        }
+
+        // 文本/代码内容至少填一个（可选验证）
+        const textVal = textContent.value.trim();
+        const codeVal = codeContent.value.trim();
+        if (textVal === '' && codeVal === '') {
+            showToast('文本内容和代码内容至少填写一项', 'error');
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+    // ========== 核心逻辑 ==========
+    /**
+     * 初始化页面数据
+     */
+    async function initPage() {
+        // 重置状态
+        loading.classList.remove('hidden');
+        error.classList.add('hidden');
+        formContent.classList.add('hidden');
+
+        try {
+            // 1. 获取用户信息（带Token）
+            const userRes = await requestApi(USER_INFO_API);
+
+            if (userRes.code !== 200) {
+                throw new Error(userRes.message || '获取用户信息失败');
+            }
+
+            const userData = userRes.data;
+
+            // 2. 渲染用户信息到导航栏
+            navUsername.textContent = userData.username || '未知用户';
+            userInitial.textContent = userData.username ? userData.username.charAt(0).toUpperCase() : 'U';
+
+            // 3. 显示表单，隐藏加载
+            loading.classList.add('hidden');
+            formContent.classList.remove('hidden');
+
+        } catch (err) {
+            // 处理错误
+            loading.classList.add('hidden');
+            error.classList.remove('hidden');
+            errorText.textContent = err.message;
+
+            // 未登录/Token失效，跳转登录页
+            if (err.message.includes('未检测到登录状态')) {
+                setTimeout(() => {
+                    logoutAndRedirect();
+                }, 2000);
+            }
+
+            showToast(err.message, 'error');
+            console.error('加载失败：', err);
+        }
+    }
+
+    /**
+     * 提交资源表单
+     */
+    async function submitResourceForm(e) {
+        e.preventDefault();
+
+        // 1. 表单验证
+        if (!validateForm()) {
+            return;
+        }
+
+        // 2. 构建请求参数
+        const formData = {
+            title: title.value.trim(),
+            text_content: textContent.value.trim(), // 对应后端字段
+            code_content: codeContent.value.trim()  // 对应后端字段
+        };
+
+        // 3. 禁用提交按钮，防止重复提交
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-1"></i> 提交中...';
+        showToast('正在提交资源，请稍候', 'info');
+
+        try {
+            // 4. 调用创建资源接口（带Token）
+            const response = await requestApi(CREATE_RESOURCE_API, 'POST', formData);
+
+            if (response.code === 200) {
+                // 5. 提交成功处理
+                showToast('资源创建成功', 'success');
+
+                // 填充成功提示信息
+                successTitle.textContent = response.data.title;
+                successTime.textContent = response.data.publish_time;
+                successUserId.textContent = response.data.user_id;
+
+                // 显示成功卡片，隐藏表单提交按钮
+                successCard.classList.remove('hidden');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fa fa-paper-plane mr-1"></i> 提交资源';
+
+                // 禁用表单输入
+                title.disabled = true;
+                textContent.disabled = true;
+                codeContent.disabled = true;
+            } else {
+                throw new Error(response.message || '创建资源失败');
+            }
+
+        } catch (err) {
+            // 6. 提交失败处理
+            showToast(err.message, 'error');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fa fa-paper-plane mr-1"></i> 提交资源';
+            console.error('提交资源失败：', err);
+        }
+    }
+
+    /**
+     * 重置表单
+     */
+    function resetForm() {
+        resourceForm.reset();
+        // 清除错误提示
+        titleError.classList.add('hidden');
+        title.classList.remove('form-input-error');
+        // 隐藏成功卡片
+        successCard.classList.add('hidden');
+        // 启用表单输入
+        title.disabled = false;
+        textContent.disabled = false;
+        codeContent.disabled = false;
+        showToast('表单已重置', 'info');
+    }
+
+    // ========== 事件绑定 ==========
+    // 页面加载初始化
+    window.addEventListener('load', initPage);
+
+    // 表单提交
+    resourceForm.addEventListener('submit', submitResourceForm);
+
+    // 重置按钮
+    resetBtn.addEventListener('click', resetForm);
+
+    // 退出登录
+    logoutBtn.addEventListener('click', () => {
+        if (confirm('确定要退出登录吗？')) {
+            logoutAndRedirect();
+            showToast('退出登录成功', 'success');
+        }
+    });
+
+    // 标题输入实时验证
+    title.addEventListener('blur', () => {
+        if (title.value.trim() === '') {
+            titleError.classList.remove('hidden');
+            title.classList.add('form-input-error');
+        } else {
+            titleError.classList.add('hidden');
+            title.classList.remove('form-input-error');
+        }
+    });
+
+    // 移动端菜单（占位）
+    document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+        alert('移动端菜单功能可后续完善');
+    });
+
+    // 初始化代码高亮（可选）
+    hljs.highlightAll();
+</script>
+</body>
+</html>

@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <script src="../static/js/config.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>注册 - 公司面试网站</title>
+    <style>
+        /* 全局样式重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft Yahei", "PingFang SC", sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        /* 表单容器 */
+        .form-container {
+            background-color: #fff;
+            width: 100%;
+            max-width: 450px;
+            padding: 40px 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        /* 表单标题 */
+        .form-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1f2937;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        /* 错误提示 */
+        .error-tip {
+            height: 20px;
+            line-height: 20px;
+            color: #f56c6c;
+            font-size: 14px;
+            text-align: left;
+            margin-bottom: 15px;
+            padding-left: 2px;
+        }
+
+        /* 通用输入框/选择框样式 */
+        .form-input {
+            width: 100%;
+            height: 48px;
+            padding: 0 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            outline: none;
+        }
+
+        .form-input:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+        }
+
+        .form-input::placeholder {
+            color: #9ca3af;
+        }
+
+        /* 密码强度提示 */
+        .password-strength {
+            height: 20px;
+            margin: -15px 0 20px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .strength-bar {
+            flex: 1;
+            height: 4px;
+            border-radius: 2px;
+            background-color: #e5e7eb;
+        }
+
+        .strength-bar.weak {
+            background-color: #f56c6c;
+        }
+
+        .strength-bar.medium {
+            background-color: #f97316;
+        }
+
+        .strength-bar.strong {
+            background-color: #10b981;
+        }
+
+        .strength-text {
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        /* 表单按钮 */
+        .form-btn {
+            width: 100%;
+            height: 50px;
+            background-color: #2563eb;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .form-btn:disabled {
+            background-color: #b3d8ff;
+            cursor: not-allowed;
+        }
+
+        .form-btn:hover:not(:disabled) {
+            background-color: #1d4ed8;
+        }
+
+        /* 加载动画 */
+        .loading {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #fff;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+            display: none;
+        }
+
+        .form-btn.loading .loading {
+            display: block;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 链接区域 */
+        .form-link {
+            text-align: center;
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .form-link a {
+            color: #2563eb;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .form-link a:hover {
+            color: #1d4ed8;
+            text-decoration: underline;
+        }
+
+        /* 响应式适配 */
+        @media (max-width: 480px) {
+            .form-container {
+                padding: 30px 20px;
+            }
+
+            .form-title {
+                font-size: 22px;
+            }
+
+            .form-input {
+                height: 44px;
+                font-size: 15px;
+            }
+
+            .form-btn {
+                height: 46px;
+                font-size: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="form-container">
+    <h2 class="form-title">用户注册</h2>
+    <div class="error-tip" id="errorTip"></div>
+
+    <!-- 用户名 -->
+    <input type="text" class="form-input" id="username" placeholder="请输入用户名（3-50位）" autocomplete="off">
+
+    <!-- 密码 + 强度提示 -->
+    <input type="password" class="form-input" id="password" placeholder="请输入密码（6-20位）" autocomplete="off">
+    <div class="password-strength" id="passwordStrength">
+        <div class="strength-bar"></div>
+        <div class="strength-bar"></div>
+        <div class="strength-bar"></div>
+        <span class="strength-text">密码强度</span>
+    </div>
+
+    <!-- 邮箱 -->
+    <input type="email" class="form-input" id="email" placeholder="请输入邮箱（选填）" autocomplete="off">
+
+    <!-- 手机号 -->
+    <input type="tel" class="form-input" id="phone" placeholder="请输入手机号（选填）" autocomplete="off">
+
+    <!-- 角色选择 -->
+    <select class="form-input" id="role">
+        <option value="candidate">候选人</option>
+        <option value="hr">HR</option>
+        <option value="admin">管理员</option>
+    </select>
+
+    <!-- 注册按钮（带加载） -->
+    <button class="form-btn" id="registerBtn" onclick="handleRegister()">
+        <span class="loading"></span>
+        <span class="btn-text">注册</span>
+    </button>
+
+    <!-- 登录链接 -->
+    <div class="form-link">
+        已有账号？<a href="" data-page="LOGIN">立即登录</a>
+    </div>
+</div>
+
+<script>
+    // ========== 统一配置：API和页面路径 ==========
+    const CONFIG = {
+        // API配置
+        API: {
+            BASE_URL: AppConfig.API_BASE_URL,  // 后端服务地址
+            REGISTER: '/staff/register'          // 注册接口
+        },
+        // 页面路径配置
+        PAGES: {
+            LOGIN: '/page/login'                // 登录页
+        }
+    };
+
+    // 密码强度检测
+    const passwordInput = document.getElementById("password");
+    const passwordStrength = document.getElementById("passwordStrength");
+    const strengthBars = passwordStrength.querySelectorAll(".strength-bar");
+    const strengthText = passwordStrength.querySelector(".strength-text");
+
+    passwordInput.addEventListener("input", () => {
+        const password = passwordInput.value;
+        let strength = 0;
+
+        // 强度规则：长度、数字、字母、特殊字符
+        if (password.length >= 6) strength++;
+        if (/[a-zA-Z]/.test(password) && /\d/.test(password)) strength++;
+        if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/.test(password)) strength++;
+
+        // 重置样式
+        strengthBars.forEach(bar => bar.className = "strength-bar");
+        strengthText.textContent = "密码强度";
+
+        // 设置强度样式
+        if (password.length === 0) return;
+
+        if (strength === 1) {
+            strengthBars[0].classList.add("weak");
+            strengthText.textContent = "弱";
+            strengthText.style.color = "#f56c6c";
+        } else if (strength === 2) {
+            strengthBars[0].classList.add("medium");
+            strengthBars[1].classList.add("medium");
+            strengthText.textContent = "中";
+            strengthText.style.color = "#f97316";
+        } else if (strength === 3) {
+            strengthBars[0].classList.add("strong");
+            strengthBars[1].classList.add("strong");
+            strengthBars[2].classList.add("strong");
+            strengthText.textContent = "强";
+            strengthText.style.color = "#10b981";
+        }
+    });
+
+    // 防止重复提交标记
+    let isSubmitting = false;
+
+    // 注册按钮点击事件
+    async function handleRegister() {
+        // 获取元素
+        const username = document.getElementById("username").value.trim();
+        const password = document.getElementById("password").value.trim();
+        const email = document.getElementById("email").value.trim();
+        const phone = document.getElementById("phone").value.trim();
+        const role = document.getElementById("role").value;
+        const errorTip = document.getElementById("errorTip");
+        const registerBtn = document.getElementById("registerBtn");
+        const btnText = registerBtn.querySelector(".btn-text");
+
+        // 1. 防止重复提交
+        if (isSubmitting) return;
+        isSubmitting = true;
+        registerBtn.classList.add("loading");
+        registerBtn.disabled = true;
+        btnText.textContent = "注册中...";
+        errorTip.innerText = "";
+
+        // 2. 前端参数校验
+        try {
+            // 用户名校验
+            if (!username) throw new Error("请输入用户名");
+            if (username.length < 3 || username.length > 50) throw new Error("用户名长度需在3-50位之间");
+
+            // 密码校验
+            if (!password) throw new Error("请输入密码");
+            if (password.length < 6 || password.length > 20) throw new Error("密码长度需在6-20位之间");
+
+            // 邮箱格式校验（选填但填了要校验）
+            if (email && !/^[\w.-]+@[\w.-]+\.\w+$/.test(email)) throw new Error("邮箱格式不正确");
+
+            // 手机号格式校验（选填但填了要校验）
+            if (phone && !/^1[3-9]\d{9}$/.test(phone)) throw new Error("手机号格式不正确");
+
+            // 3. 调用注册API（根据后端RegisterRequest结构）
+            const response = await fetch(`${CONFIG.API.BASE_URL}${CONFIG.API.REGISTER}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username,
+                    password,
+                    email: email || '',  // 可选字段
+                    phone: phone || '',  // 可选字段
+                    role: role || 'candidate'  // 默认角色
+                }),
+                credentials: 'include'
+            });
+
+            const result = await response.json();
+
+            // 4. 处理响应（后端返回：{code: 200, message: "注册成功", data: RegisterResponse}）
+            if (response.ok && result.code === 200) {
+                alert("注册成功！即将跳转到登录页面");
+                window.location.href = CONFIG.PAGES.LOGIN;
+            } else {
+                // 后端返回：{code: 400/500, message: "xxx", error: "xxx"}
+                throw new Error(result.error || result.message || "注册失败");
+            }
+        } catch (err) {
+            // 显示错误提示
+            errorTip.innerText = err.message;
+            console.error("注册失败：", err);
+        } finally {
+            // 重置提交状态
+            isSubmitting = false;
+            registerBtn.classList.remove("loading");
+            registerBtn.disabled = false;
+            btnText.textContent = "注册";
+        }
+    }
+
+    // ========== 初始化页面链接 ==========
+    function initPageLinks() {
+        document.querySelectorAll('a[data-page]').forEach(link => {
+            const pageKey = link.getAttribute('data-page');
+            if (CONFIG.PAGES[pageKey]) {
+                link.href = CONFIG.PAGES[pageKey];
+            }
+        });
+    }
+
+    // 页面加载时初始化链接
+    window.addEventListener('DOMContentLoaded', initPageLinks);
+</script>
+</body>
+</html>

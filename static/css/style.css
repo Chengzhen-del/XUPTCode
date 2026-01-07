@@ -1,0 +1,688 @@
+/* 全局样式重置 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Microsoft Yahei", "PingFang SC", sans-serif;
+}
+
+body {
+    /* 渐变背景 */
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+/* 表单容器 */
+.form-container {
+    background: #ffffff;
+    width: 100%;
+    max-width: 420px;
+    padding: 40px 30px;
+    border-radius: 16px;
+    /* 柔和阴影 */
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    position: relative;
+    overflow: hidden;
+}
+
+/* 标题装饰 */
+.form-container::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 6px;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+}
+
+/* 表单标题 */
+.form-title {
+    text-align: center;
+    color: #333;
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 30px;
+    letter-spacing: 0.5px;
+}
+
+/* 错误提示 */
+.error-tip {
+    text-align: center;
+    color: #e53e3e;
+    font-size: 14px;
+    height: 20px;
+    margin-bottom: 15px;
+    /* 淡入动画 */
+    transition: all 0.3s ease;
+}
+
+/* 输入框样式 */
+.form-input {
+    width: 100%;
+    height: 50px;
+    padding: 0 18px;
+    margin-bottom: 20px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 16px;
+    color: #333;
+    outline: none;
+    /* 过渡动画 */
+    transition: all 0.3s ease;
+}
+
+/* 输入框聚焦效果 */
+.form-input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* 输入框占位符样式 */
+.form-input::placeholder {
+    color: #a0aec0;
+    font-size: 15px;
+}
+
+/* 按钮样式 */
+.form-btn {
+    width: 100%;
+    height: 50px;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 25px;
+}
+
+/* 按钮hover/active效果 */
+.form-btn:hover {
+    opacity: 0.95;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.form-btn:active {
+    transform: translateY(0);
+}
+
+/* 链接区域 */
+.form-link {
+    text-align: center;
+    font-size: 15px;
+    color: #718096;
+}
+
+/* 链接样式 */
+.form-link a {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.form-link a:hover {
+    color: #764ba2;
+    text-decoration: underline;
+}
+
+/* 响应式适配（小屏幕） */
+@media (max-width: 480px) {
+    .form-container {
+        padding: 30px 20px;
+    }
+
+    .form-title {
+        font-size: 22px;
+    }
+
+    .form-input, .form-btn {
+        height: 46px;
+        font-size: 15px;
+    }
+}
+/* 通用容器 */
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* 导航栏 */
+.header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: #fff;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    z-index: 999;
+}
+.header .container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 80px;
+}
+.logo {
+    display: flex;
+    flex-direction: column;
+}
+.logo h1 {
+    font-size: 22px;
+    color: #667eea;
+    margin-bottom: 2px;
+}
+.logo p {
+    font-size: 12px;
+    color: #718096;
+}
+.nav {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+}
+.nav-link {
+    color: #333;
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 500;
+    transition: color 0.3s;
+}
+.nav-link.active, .nav-link:hover {
+    color: #667eea;
+}
+.nav-btn {
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    color: #fff;
+    padding: 8px 20px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: opacity 0.3s;
+}
+.nav-btn:hover {
+    opacity: 0.9;
+}
+.menu-btn {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: #333;
+    cursor: pointer;
+}
+
+/* 移动端导航 */
+.mobile-nav {
+    position: fixed;
+    top: 80px;
+    left: 0;
+    width: 100%;
+    background: #fff;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    display: none;
+    flex-direction: column;
+    z-index: 998;
+}
+.mobile-nav-link {
+    padding: 15px 20px;
+    color: #333;
+    text-decoration: none;
+    border-bottom: 1px solid #f5f5f5;
+    transition: background 0.3s;
+}
+.mobile-nav-link:hover {
+    background: #f8f9fa;
+}
+.mobile-nav-btn {
+    padding: 15px 20px;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    color: #fff;
+    text-decoration: none;
+    text-align: center;
+}
+
+/* Banner区 */
+.banner {
+    margin-top: 80px;
+    height: calc(100vh - 80px);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #fff;
+}
+.banner-content h2 {
+    font-size: 48px;
+    margin-bottom: 20px;
+    letter-spacing: 1px;
+}
+.banner-content p {
+    font-size: 18px;
+    margin-bottom: 30px;
+    opacity: 0.9;
+}
+.banner-btn {
+    background: #fff;
+    color: #667eea;
+    padding: 12px 30px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 500;
+    transition: all 0.3s;
+}
+.banner-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+/* 通用板块标题 */
+.section-title {
+    text-align: center;
+    font-size: 32px;
+    color: #333;
+    margin-bottom: 50px;
+    position: relative;
+}
+.section-title::after {
+    content: "";
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 4px;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    border-radius: 2px;
+}
+
+/* 公司介绍 */
+.about {
+    padding: 100px 0;
+    background: #fff;
+}
+.about-content {
+    display: flex;
+    align-items: center;
+    gap: 50px;
+}
+.about-text {
+    flex: 1;
+    font-size: 16px;
+    line-height: 1.8;
+    color: #555;
+}
+.about-text p {
+    margin-bottom: 15px;
+}
+.about-img {
+    flex: 1;
+}
+.about-img img {
+    width: 100%;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+/* 企业文化 */
+.culture {
+    padding: 100px 0;
+    background: #f8f9fa;
+}
+.culture-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 30px;
+}
+.culture-card {
+    background: #fff;
+    padding: 40px 20px;
+    border-radius: 10px;
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    transition: transform 0.3s;
+}
+.culture-card:hover {
+    transform: translateY(-5px);
+}
+.culture-card i {
+    font-size: 40px;
+    color: #667eea;
+    margin-bottom: 20px;
+}
+.culture-card h4 {
+    font-size: 18px;
+    color: #333;
+    margin-bottom: 10px;
+}
+.culture-card p {
+    color: #718096;
+    font-size: 14px;
+}
+
+/* 招聘岗位 */
+.jobs {
+    padding: 100px 0;
+    background: #fff;
+}
+.job-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 30px;
+}
+.job-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 25px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    transition: transform 0.3s;
+}
+.job-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+.job-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+.job-header h4 {
+    font-size: 18px;
+    color: #333;
+}
+.job-salary {
+    color: #667eea;
+    font-weight: 600;
+    font-size: 14px;
+}
+.job-info {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px;
+    font-size: 13px;
+    color: #718096;
+}
+.job-info i {
+    margin-right: 5px;
+}
+.job-desc {
+    font-size: 14px;
+    color: #555;
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+.job-footer {
+    text-align: right;
+}
+.job-apply {
+    background: #667eea;
+    color: #fff;
+    padding: 8px 20px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 14px;
+    transition: background 0.3s;
+}
+.job-apply:hover {
+    background: #764ba2;
+}
+
+/* 联系我们 */
+.contact {
+    padding: 100px 0;
+    background: #f8f9fa;
+}
+.contact-content {
+    display: flex;
+    gap: 50px;
+}
+.contact-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+.contact-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+}
+.contact-item i {
+    font-size: 24px;
+    color: #667eea;
+    margin-top: 5px;
+}
+.contact-item h4 {
+    font-size: 18px;
+    color: #333;
+    margin-bottom: 5px;
+}
+.contact-item p {
+    color: #718096;
+    font-size: 14px;
+}
+.contact-map {
+    flex: 1;
+}
+.contact-map img {
+    width: 100%;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+/* 底部 */
+.footer {
+    background: #333;
+    color: #fff;
+    padding: 50px 0 20px;
+}
+.footer-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 30px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.footer-logo h2 {
+    font-size: 22px;
+    margin-bottom: 5px;
+}
+.footer-logo p {
+    font-size: 12px;
+    opacity: 0.7;
+}
+.footer-links {
+    display: flex;
+    gap: 20px;
+}
+.footer-links a {
+    color: #fff;
+    opacity: 0.7;
+    text-decoration: none;
+    transition: opacity 0.3s;
+}
+.footer-links a:hover {
+    opacity: 1;
+}
+.footer-bottom {
+    text-align: center;
+    font-size: 12px;
+    opacity: 0.7;
+}
+
+/* 响应式适配 */
+@media (max-width: 992px) {
+    .about-content, .contact-content {
+        flex-direction: column;
+    }
+    .culture-cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .banner-content h2 {
+        font-size: 36px;
+    }
+}
+
+@media (max-width: 768px) {
+    .nav {
+        display: none;
+    }
+    .menu-btn {
+        display: block;
+    }
+    .banner-content h2 {
+        font-size: 28px;
+    }
+    .banner-content p {
+        font-size: 16px;
+    }
+    .section-title {
+        font-size: 26px;
+    }
+    .about, .culture, .jobs, .contact {
+        padding: 60px 0;
+    }
+}
+
+@media (max-width: 576px) {
+    .culture-cards {
+        grid-template-columns: 1fr;
+    }
+    .footer-top {
+        flex-direction: column;
+        gap: 20px;
+        text-align: center;
+    }
+    .footer-links {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}
+
+/* 原有登录页样式（保留） */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Microsoft Yahei", "PingFang SC", sans-serif;
+}
+/* 以下粘贴之前登录页的所有样式 */
+.form-container {
+    background: #ffffff;
+    width: 100%;
+    max-width: 420px;
+    padding: 40px 30px;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    position: relative;
+    overflow: hidden;
+}
+.form-container::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 6px;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+}
+.form-title {
+    text-align: center;
+    color: #333;
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 30px;
+    letter-spacing: 0.5px;
+}
+.error-tip {
+    text-align: center;
+    color: #e53e3e;
+    font-size: 14px;
+    height: 20px;
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+}
+.form-input {
+    width: 100%;
+    height: 50px;
+    padding: 0 18px;
+    margin-bottom: 20px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 16px;
+    color: #333;
+    outline: none;
+    transition: all 0.3s ease;
+}
+.form-input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+.form-input::placeholder {
+    color: #a0aec0;
+    font-size: 15px;
+}
+.form-btn {
+    width: 100%;
+    height: 50px;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 25px;
+}
+.form-btn:hover {
+    opacity: 0.95;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+.form-btn:active {
+    transform: translateY(0);
+}
+.form-link {
+    text-align: center;
+    font-size: 15px;
+    color: #718096;
+}
+.form-link a {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+.form-link a:hover {
+    color: #764ba2;
+    text-decoration: underline;
+}
+@media (max-width: 480px) {
+    .form-container {
+        padding: 30px 20px;
+    }
+    .form-title {
+        font-size: 22px;
+    }
+    .form-input, .form-btn {
+        height: 46px;
+        font-size: 15px;
+    }
+}

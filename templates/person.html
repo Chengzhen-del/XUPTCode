@@ -1,0 +1,1300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <script src="../static/js/config.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人中心 - 西邮代码库 XUPTCode</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 图标库 -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+
+    <!-- 西邮校色配置（和首页一致） -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        xiyou: {
+                            blue: '#00529B',    // 西邮主蓝
+                            red: '#E63946',     // 西邮辅助红
+                            light: '#E8F4FD',   // 西邮背景浅蓝
+                        },
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .info-item-label {
+                @apply text-gray-600 text-sm mb-1;
+            }
+            .info-item-value {
+                @apply text-gray-800 font-medium;
+            }
+            .info-empty {
+                @apply text-gray-400 italic text-sm;
+            }
+            .card-hover {
+                transition: all 0.3s ease;
+            }
+            .card-hover:hover {
+                box-shadow: 0 10px 25px -5px rgba(0, 82, 155, 0.1);
+            }
+            .form-input-error {
+                @apply border-red-500 focus:ring-red-500 focus:border-red-500;
+            }
+            .error-text {
+                @apply text-red-500 text-xs mt-1;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans min-h-screen flex flex-col">
+<!-- 顶部导航栏（和首页一致） -->
+<header class="sticky top-0 z-50 bg-white shadow-sm">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+            <!-- 左侧Logo -->
+            <div class="flex items-center">
+                <div class="text-xiyou-blue font-bold text-2xl mr-8">
+                    XUPT<span class="text-xiyou-red">Code</span>
+                </div>
+                <!-- 导航菜单（桌面端） -->
+                <nav class="hidden md:flex space-x-6">
+                    <a href="/page/index" class="text-gray-600 font-medium hover:text-xiyou-blue transition-colors">首页</a>
+                    <a href="/page/resource-list" class="text-gray-600 font-medium hover:text-xiyou-blue transition-colors">资源库</a>
+                    <a href="/page/upload" class="text-gray-600 font-medium hover:text-xiyou-blue transition-colors">上传资源</a>
+                    <a href="/page/first" class="text-xiyou-blue font-medium hover:text-xiyou-red transition-colors">主页</a>
+                    <a href="/page/ai" class="text-gray-600 font-medium hover:text-xiyou-blue transition-colors">AI</a>
+                </nav>
+            </div>
+
+            <!-- 右侧用户信息 + 退出登录 -->
+            <div class="flex items-center space-x-4">
+                <!-- 简化版用户信息 -->
+                <div class="hidden md:flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-xiyou-blue font-bold bg-xiyou-light">
+                        <span id="userInitial">U</span>
+                    </div>
+                    <div class="text-left">
+                        <div class="text-sm font-medium text-gray-800" id="navUsername">用户名</div>
+                        <div class="text-xs text-gray-500">个人中心</div>
+                    </div>
+                </div>
+
+                <!-- 退出登录按钮 -->
+                <button id="logoutBtn" class="text-gray-600 hover:text-xiyou-red transition-colors flex items-center">
+                    <i class="fa fa-sign-out mr-1"></i>
+                    <span class="hidden sm:inline">退出登录</span>
+                </button>
+
+                <!-- 移动端菜单按钮 -->
+                <button class="md:hidden text-gray-700 hover:text-xiyou-blue" id="mobileMenuBtn">
+                    <i class="fa fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- 面包屑导航 -->
+<section class="bg-white border-b border-gray-200 py-3">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center text-sm">
+            <a href="/page/index" class="text-gray-600 hover:text-xiyou-blue">首页</a>
+            <i class="fa fa-angle-right mx-2 text-gray-400"></i>
+            <span class="text-xiyou-blue font-medium">个人中心</span>
+        </div>
+    </div>
+</section>
+
+<!-- 核心内容区 -->
+<main class="flex-grow py-8 md:py-12">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- 加载状态 -->
+        <div id="loading" class="flex flex-col items-center justify-center py-16 text-gray-600">
+            <i class="fa fa-spinner fa-spin text-3xl mb-4 text-xiyou-blue"></i>
+            <p>正在加载个人信息...</p>
+        </div>
+
+        <!-- 错误状态 -->
+        <div id="error" class="py-16 text-center text-red-500 hidden">
+            <i class="fa fa-exclamation-circle text-3xl mb-4"></i>
+            <p id="errorText">加载失败，请刷新重试</p>
+            <button onclick="initPage()" class="mt-4 px-4 py-2 bg-xiyou-blue text-white rounded-md hover:bg-xiyou-blue/90 transition-colors">
+                重新加载
+            </button>
+        </div>
+
+        <!-- 个人信息内容（初始隐藏） -->
+        <div id="infoContent" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- 左侧：个人基本信息卡片 -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- 头像和基础信息 -->
+                <div class="bg-white rounded-xl shadow-sm p-6 card-hover">
+                    <h3 class="text-lg font-bold text-gray-800 mb-6 flex items-center">
+                        <i class="fa fa-user-circle text-xiyou-blue mr-2"></i>
+                        基本信息
+                    </h3>
+
+                    <div class="flex flex-col md:flex-row items-start md:items-center gap-6 mb-6">
+                        <!-- 头像 -->
+                        <div class="relative">
+                            <div class="w-24 h-24 rounded-full overflow-hidden border-4 border-xiyou-light">
+                                <img id="avatarImg" src="" alt="用户头像" class="w-full h-full object-cover">
+                                <!-- 默认头像占位 -->
+                                <div id="defaultAvatar" class="w-full h-full bg-xiyou-light flex items-center justify-center text-3xl text-xiyou-blue">
+                                    <span id="avatarInitial">U</span>
+                                </div>
+                            </div>
+                            <!-- 编辑头像按钮（仅展示，可后续加功能） -->
+                            <button class="absolute bottom-0 right-0 w-8 h-8 bg-xiyou-blue rounded-full flex items-center justify-center text-white shadow-md hover:bg-xiyou-blue/90 transition-colors">
+                                <i class="fa fa-camera"></i>
+                            </button>
+                        </div>
+
+                        <!-- 基础信息 -->
+                        <div class="flex-1">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <div class="info-item-label">用户名</div>
+                                    <div class="info-item-value" id="username">未知</div>
+                                </div>
+                                <div>
+                                    <div class="info-item-label">用户ID</div>
+                                    <div class="info-item-value" id="userId">0</div>
+                                </div>
+                                <div>
+                                    <div class="info-item-label">角色</div>
+                                    <div class="info-item-value">
+                                        <span id="role" class="px-2 py-1 bg-xiyou-light text-xiyou-blue rounded-full text-xs">未知</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 详细信息 -->
+                    <div class="border-t border-gray-100 pt-6">
+                        <h4 class="font-medium text-gray-700 mb-4">详细资料</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <div>
+                                <div class="info-item-label">真实姓名</div>
+                                <div class="info-item-value" id="realName">
+                                    <span class="info-empty">未设置</span>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="info-item-label">性别</div>
+                                <div class="info-item-value" id="gender">
+                                    <span class="info-empty">未设置</span>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="info-item-label">邮箱</div>
+                                <div class="info-item-value" id="email">
+                                    <span class="info-empty">未设置</span>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="info-item-label">手机号</div>
+                                <div class="info-item-value" id="phone">
+                                    <span class="info-empty">未设置</span>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="info-item-label">出生日期</div>
+                                <div class="info-item-value" id="birthDate">
+                                    <span class="info-empty">未设置</span>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="info-item-label">每日一句</div>
+                                <div class="info-item-value" id="wod">
+                                    <span class="info-empty">暂无</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 编辑信息按钮（绑定点击事件） -->
+                        <div class="mt-6">
+                            <button id="editInfoBtn" class="px-4 py-2 border border-xiyou-blue text-xiyou-blue rounded-md hover:bg-xiyou-light transition-colors">
+                                <i class="fa fa-pencil mr-1"></i> 编辑个人信息
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 操作记录/其他模块（预留） -->
+                <div class="bg-white rounded-xl shadow-sm p-6 card-hover">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                        <i class="fa fa-history text-xiyou-blue mr-2"></i>
+                        最近操作
+                    </h3>
+                    <div class="text-center py-8 text-gray-400">
+                        <i class="fa fa-calendar-o text-4xl mb-2"></i>
+                        <p>暂无操作记录</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：账户信息卡片 -->
+            <div class="space-y-6">
+                <!-- 账户余额 -->
+                <div class="bg-white rounded-xl shadow-sm p-6 card-hover">
+                    <h3 class="text-lg font-bold text-gray-800 mb-6 flex items-center">
+                        <i class="fa fa-wallet text-xiyou-blue mr-2"></i>
+                        账户信息
+                    </h3>
+
+                    <!-- 当前余额（突出显示） -->
+                    <div class="text-center mb-6">
+                        <div class="text-gray-600 text-sm mb-1">当前余额</div>
+                        <div class="text-3xl font-bold text-xiyou-red" id="balance">¥0.00</div>
+                    </div>
+
+                    <!-- 充值/提现按钮 -->
+                    <div class="flex gap-4 mb-8">
+                        <button class="flex-1 px-4 py-2 bg-xiyou-blue text-white rounded-md hover:bg-xiyou-blue/90 transition-colors">
+                            <i class="fa fa-plus-circle mr-1"></i> 充值
+                        </button>
+                        <button class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors">
+                            <i class="fa fa-minus-circle mr-1"></i> 提现
+                        </button>
+                    </div>
+
+                    <!-- 账户统计 -->
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center pb-3 border-b border-gray-100">
+                            <span class="text-gray-600">累计充值</span>
+                            <span class="font-medium text-green-600" id="totalRecharge">¥0.00</span>
+                        </div>
+                        <div class="flex justify-between items-center pb-3 border-b border-gray-100">
+                            <span class="text-gray-600">累计消费</span>
+                            <span class="font-medium text-red-500" id="totalConsume">¥0.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 账户安全（预留） -->
+                <div class="bg-white rounded-xl shadow-sm p-6 card-hover">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                        <i class="fa fa-shield text-xiyou-blue mr-2"></i>
+                        账户安全
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-700">登录密码</span>
+                            <button class="text-xiyou-blue text-sm hover:text-xiyou-red transition-colors">
+                                修改 <i class="fa fa-angle-right ml-1"></i>
+                            </button>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-700">支付密码</span>
+                            <span class="text-gray-400 text-sm">未设置</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- 编辑个人信息弹窗 -->
+<div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 overflow-hidden">
+        <!-- 弹窗头部 -->
+        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+            <h3 class="text-lg font-bold text-gray-800">编辑个人信息</h3>
+            <button id="closeModalBtn" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <i class="fa fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <!-- 弹窗表单 -->
+        <div class="px-6 py-4 max-h-[70vh] overflow-y-auto">
+            <form id="editInfoForm" class="space-y-4">
+                <!-- 用户名 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">用户名</label>
+                    <input
+                            type="text"
+                            id="formUsername"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-xiyou-blue focus:border-xiyou-blue"
+                            placeholder="请输入用户名"
+                    >
+                </div>
+
+                <!-- 真实姓名 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">真实姓名</label>
+                    <input
+                            type="text"
+                            id="formRealName"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-xiyou-blue focus:border-xiyou-blue"
+                            placeholder="请输入真实姓名"
+                    >
+                </div>
+
+                <!-- 性别 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">性别</label>
+                    <div class="flex space-x-4">
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="gender" value="男" class="text-xiyou-blue focus:ring-xiyou-blue">
+                            <span class="ml-2 text-gray-700">男</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="gender" value="女" class="text-xiyou-blue focus:ring-xiyou-blue">
+                            <span class="ml-2 text-gray-700">女</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="gender" value="" class="text-xiyou-blue focus:ring-xiyou-blue">
+                            <span class="ml-2 text-gray-700">未设置</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 邮箱 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">邮箱</label>
+                    <input
+                            type="email"
+                            id="formEmail"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-xiyou-blue focus:border-xiyou-blue"
+                            placeholder="请输入邮箱地址"
+                    >
+                    <span id="emailError" class="error-text hidden">邮箱格式错误</span>
+                </div>
+
+                <!-- 手机号 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">手机号</label>
+                    <input
+                            type="tel"
+                            id="formPhone"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-xiyou-blue focus:border-xiyou-blue"
+                            placeholder="请输入11位手机号"
+                    >
+                    <span id="phoneError" class="error-text hidden">手机号格式错误（需为11位有效手机号）</span>
+                </div>
+
+                <!-- 出生日期 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">出生日期</label>
+                    <input
+                            type="date"
+                            id="formBirthDate"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-xiyou-blue focus:border-xiyou-blue"
+                    >
+                    <span id="birthDateError" class="error-text hidden">出生日期格式错误（需为YYYY-MM-DD）</span>
+                </div>
+            </form>
+        </div>
+
+        <!-- 弹窗底部按钮 -->
+        <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+            <button id="cancelEditBtn" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors">
+                取消
+            </button>
+            <button id="submitEditBtn" class="px-4 py-2 bg-xiyou-blue text-white rounded-md hover:bg-xiyou-blue/90 transition-colors">
+                保存修改
+            </button>
+        </div>
+    </div>
+</div>
+<!-- 头像上传弹窗 -->
+<div id="avatarUploadModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
+        <!-- 弹窗头部 -->
+        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+            <h3 class="text-lg font-bold text-gray-800">更换头像</h3>
+            <button id="closeAvatarModalBtn" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <i class="fa fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <!-- 弹窗内容 -->
+        <div class="px-6 py-6">
+            <!-- 图片预览区域 -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">预览</label>
+                <div class="w-32 h-32 mx-auto rounded-full overflow-hidden border-4 border-xiyou-light bg-xiyou-light flex items-center justify-center">
+                    <img id="avatarPreviewImg" src="" alt="头像预览" class="w-full h-full object-cover hidden">
+                    <div id="avatarPreviewDefault" class="text-3xl text-xiyou-blue">
+                        <i class="fa fa-user-circle"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 文件选择区域 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">选择头像文件</label>
+                <div class="flex items-center justify-center border-2 border-dashed border-gray-300 rounded-md p-6 hover:border-xiyou-blue transition-colors cursor-pointer" id="avatarFileSelectArea">
+                    <div class="text-center">
+                        <i class="fa fa-upload text-2xl text-gray-400 mb-2"></i>
+                        <p class="text-sm text-gray-500">点击或拖拽文件至此处</p>
+                        <p class="text-xs text-gray-400 mt-1">支持PNG/JPG/GIF格式，大小不超过2MB</p>
+                    </div>
+                    <input
+                            type="file"
+                            id="avatarFileInput"
+                            class="hidden"
+                            accept="image/png,image/jpeg,image/jpg,image/gif"
+                    >
+                </div>
+                <span id="avatarFileError" class="error-text hidden">请选择有效的图片文件（格式/大小不符合要求）</span>
+            </div>
+        </div>
+
+        <!-- 弹窗底部按钮 -->
+        <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+            <button id="cancelAvatarUploadBtn" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors">
+                取消
+            </button>
+            <button id="submitAvatarUploadBtn" class="px-4 py-2 bg-xiyou-blue text-white rounded-md hover:bg-xiyou-blue/90 transition-colors">
+                确认上传
+            </button>
+        </div>
+    </div>
+</div>
+<!-- 充值弹窗 -->
+<div id="rechargeModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
+        <!-- 弹窗头部 -->
+        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+            <h3 class="text-lg font-bold text-gray-800">账户充值</h3>
+            <button id="closeRechargeModalBtn" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <i class="fa fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <!-- 弹窗表单 -->
+        <div class="px-6 py-6">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">充值金额（元）</label>
+                    <input
+                            type="number"
+                            id="rechargeAmount"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-xiyou-blue focus:border-xiyou-blue"
+                            placeholder="请输入充值金额（大于0）"
+                            step="0.01"
+                            min="0.01"
+                    >
+                    <span id="rechargeAmountError" class="error-text hidden">请输入大于0的有效金额</span>
+                </div>
+
+                <!-- 快捷金额选项 -->
+                <div class="pt-2">
+                    <p class="text-sm text-gray-600 mb-2">快捷充值</p>
+                    <div class="flex flex-wrap gap-2">
+                        <button class="rechargeQuickBtn px-3 py-1 border border-gray-300 rounded-md hover:bg-xiyou-light hover:text-xiyou-blue transition-colors" data-amount="10">¥10</button>
+                        <button class="rechargeQuickBtn px-3 py-1 border border-gray-300 rounded-md hover:bg-xiyou-light hover:text-xiyou-blue transition-colors" data-amount="50">¥50</button>
+                        <button class="rechargeQuickBtn px-3 py-1 border border-gray-300 rounded-md hover:bg-xiyou-light hover:text-xiyou-blue transition-colors" data-amount="100">¥100</button>
+                        <button class="rechargeQuickBtn px-3 py-1 border border-gray-300 rounded-md hover:bg-xiyou-light hover:text-xiyou-blue transition-colors" data-amount="200">¥200</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 弹窗底部按钮 -->
+        <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+            <button id="cancelRechargeBtn" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors">
+                取消
+            </button>
+            <button id="submitRechargeBtn" class="px-4 py-2 bg-xiyou-blue text-white rounded-md hover:bg-xiyou-blue/90 transition-colors">
+                <i class="fa fa-rmb mr-1"></i> 确认充值
+            </button>
+        </div>
+    </div>
+</div>
+<!-- 全局提示框 -->
+<div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-lg bg-gray-800 text-white shadow-lg hidden flex items-center">
+    <i class="fa fa-info-circle mr-2" id="toastIcon"></i>
+    <span id="toastText">操作提示</span>
+</div>
+
+<!-- 页脚（和首页一致） -->
+<footer class="bg-gray-800 text-white py-8 mt-auto">
+    <div class="container mx-auto px-4 text-center text-gray-400 text-sm">
+        <p>© 2026 XUPTCode - 西安邮电大学校园代码库 | 仅限校内学习交流使用</p>
+    </div>
+</footer>
+
+<script>
+    // ========== 核心配置 ==========
+    const API_BASE_URL = AppConfig.API_BASE_URL; // 替换为你的后端地址
+    const USER_INFO_API = '/staff/get-info';     // 个人信息接口
+    const ACCOUNT_API = '/account/get-account'; // 账户信息接口
+    const UPDATE_USER_API = '/staff/update'; // 编辑个人信息接口
+    const STORAGE_KEY = 'xuptcode_user_info';   // 和登录页一致的Token存储key
+    const LOGIN_PAGE_URL = '/page/index';        // 登录页地址
+
+    // ========== DOM元素 ==========
+    // 头像上传弹窗相关元素
+    const avatarUploadModal = document.getElementById('avatarUploadModal');
+    const closeAvatarModalBtn = document.getElementById('closeAvatarModalBtn');
+    const cancelAvatarUploadBtn = document.getElementById('cancelAvatarUploadBtn');
+    const submitAvatarUploadBtn = document.getElementById('submitAvatarUploadBtn');
+    const avatarFileSelectArea = document.getElementById('avatarFileSelectArea');
+    const avatarFileInput = document.getElementById('avatarFileInput');
+    const avatarPreviewImg = document.getElementById('avatarPreviewImg');
+    const avatarPreviewDefault = document.getElementById('avatarPreviewDefault');
+    const avatarFileError = document.getElementById('avatarFileError');
+    const avatarEditBtn = document.querySelector('.relative .fa-camera').parentNode; // 编辑头像按钮
+    // 存储选中的头像文件
+    let selectedAvatarFile = null;
+    // 充值弹窗相关元素
+    const rechargeModal = document.getElementById('rechargeModal');
+    const rechargeAmount = document.getElementById('rechargeAmount');
+    const rechargeAmountError = document.getElementById('rechargeAmountError');
+    const closeRechargeModalBtn = document.getElementById('closeRechargeModalBtn');
+    const cancelRechargeBtn = document.getElementById('cancelRechargeBtn');
+    const submitRechargeBtn = document.getElementById('submitRechargeBtn');
+    const rechargeQuickBtns = document.querySelectorAll('.rechargeQuickBtn');
+    // 充值按钮（页面上的充值按钮）
+    const rechargeBtn = document.querySelector('button:has(.fa-plus-circle)');
+    const loading = document.getElementById('loading');
+    const error = document.getElementById('error');
+    const errorText = document.getElementById('errorText');
+    const infoContent = document.getElementById('infoContent');
+    const toast = document.getElementById('toast');
+    const toastIcon = document.getElementById('toastIcon');
+    const toastText = document.getElementById('toastText');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    // 个人信息元素
+    const avatarImg = document.getElementById('avatarImg');
+    const defaultAvatar = document.getElementById('defaultAvatar');
+    const avatarInitial = document.getElementById('avatarInitial');
+    const username = document.getElementById('username');
+    const userId = document.getElementById('userId');
+    const role = document.getElementById('role');
+    const realName = document.getElementById('realName');
+    const gender = document.getElementById('gender');
+    const email = document.getElementById('email');
+    const phone = document.getElementById('phone');
+    const birthDate = document.getElementById('birthDate');
+    const wod = document.getElementById('wod');
+    const navUsername = document.getElementById('navUsername');
+    const userInitial = document.getElementById('userInitial');
+
+    // 账户信息元素
+    const balance = document.getElementById('balance');
+    const totalRecharge = document.getElementById('totalRecharge');
+    const totalConsume = document.getElementById('totalConsume');
+
+    // 编辑弹窗相关元素
+    const editModal = document.getElementById('editModal');
+    const editInfoBtn = document.getElementById('editInfoBtn');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const cancelEditBtn = document.getElementById('cancelEditBtn');
+    const submitEditBtn = document.getElementById('submitEditBtn');
+    const editInfoForm = document.getElementById('editInfoForm');
+
+    // 表单元素
+    const formUsername = document.getElementById('formUsername');
+    const formRealName = document.getElementById('formRealName');
+    const formEmail = document.getElementById('formEmail');
+    const formPhone = document.getElementById('formPhone');
+    const formBirthDate = document.getElementById('formBirthDate');
+    const genderRadios = document.getElementsByName('gender');
+
+    // 表单错误提示
+    const emailError = document.getElementById('emailError');
+    const phoneError = document.getElementById('phoneError');
+    const birthDateError = document.getElementById('birthDateError');
+
+    // 存储当前用户数据（用于填充表单）
+    let currentUserData = null;
+
+    // ========== 工具函数 ==========
+    /**
+     * 获取本地存储的Token
+     */
+    function getToken() {
+        const userInfoStr = localStorage.getItem(STORAGE_KEY) || sessionStorage.getItem(STORAGE_KEY);
+        if (!userInfoStr) return null;
+
+        try {
+            const userInfo = JSON.parse(userInfoStr);
+            return userInfo.token || null;
+        } catch (e) {
+            return null;
+        }
+    }
+    /**
+     * 上传头像（适配后端form-data接口）
+     */
+    async function uploadAvatar(file) {
+        const token = getToken();
+        if (!token) {
+            showToast('未检测到登录状态，请重新登录', 'error');
+            logoutAndRedirect();
+            return false;
+        }
+
+        // 1. 构造FormData（必须用此格式传文件，匹配后端avatar_file字段）
+        const formData = new FormData();
+        formData.append('avatar_file', file); // 后端要求的文件字段名
+        formData.append('avatar_file_name', file.name); // 可选，后端会兜底
+
+        try {
+            // 2. 发送文件上传请求（文件上传不能用JSON，单独写fetch）
+            const response = await fetch(`${API_BASE_URL}/staff/update-avatar`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}` // 仅传token，Content-Type由浏览器自动设置
+                },
+                body: formData,
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                throw new Error(`请求失败：${response.status}`);
+            }
+
+            const result = await response.json();
+            if (result.code === 200) {
+                showToast('头像更新成功', 'success');
+                // 3. 更新页面头像显示
+                avatarImg.src = result.avatarURL;
+                avatarImg.classList.remove('hidden');
+                defaultAvatar.classList.add('hidden');
+                // 重新加载个人信息确保数据同步
+                initPage();
+                return true;
+            } else {
+                showToast(result.message || '头像上传失败', 'error');
+                return false;
+            }
+        } catch (err) {
+            showToast('头像上传失败：' + err.message, 'error');
+            console.error('上传头像失败：', err);
+            return false;
+        }
+    }
+
+    /**
+     * 验证头像文件（格式+大小）
+     */
+    function validateAvatarFile(file) {
+        if (!file) return false;
+
+        // 验证文件类型
+        const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif'];
+        if (!allowedTypes.includes(file.type)) {
+            return false;
+        }
+
+        // 验证文件大小（2MB）
+        const maxSize = 2 * 1024 * 1024; // 2MB
+        if (file.size > maxSize) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * 预览选中的头像文件
+     */
+    function previewAvatarFile(file) {
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            avatarPreviewImg.src = e.target.result;
+            avatarPreviewImg.classList.remove('hidden');
+            avatarPreviewDefault.classList.add('hidden');
+        };
+        reader.readAsDataURL(file);
+    }
+
+    /**
+     * 打开头像上传弹窗
+     */
+    function openAvatarUploadModal() {
+        // 重置弹窗状态
+        selectedAvatarFile = null;
+        avatarPreviewImg.src = '';
+        avatarPreviewImg.classList.add('hidden');
+        avatarPreviewDefault.classList.remove('hidden');
+        avatarFileError.classList.add('hidden');
+        avatarFileInput.value = '';
+
+        // 显示弹窗
+        avatarUploadModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    /**
+     * 关闭头像上传弹窗
+     */
+    function closeAvatarUploadModal() {
+        avatarUploadModal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
+    /**
+     * 打开充值弹窗
+     */
+    function openRechargeModal() {
+        // 重置金额输入框和错误提示
+        rechargeAmount.value = '';
+        rechargeAmountError.classList.add('hidden');
+        rechargeAmount.classList.remove('form-input-error');
+
+        // 显示弹窗
+        rechargeModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    /**
+     * 关闭充值弹窗
+     */
+    function closeRechargeModal() {
+        rechargeModal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
+
+    /**
+     * 提交充值请求
+     */
+    async function submitRechargeForm() {
+        // 重置错误提示
+        rechargeAmountError.classList.add('hidden');
+        rechargeAmount.classList.remove('form-input-error');
+
+        // 获取并验证金额
+        const amountVal = parseFloat(rechargeAmount.value.trim());
+        if (isNaN(amountVal) || amountVal <= 0) {
+            rechargeAmountError.classList.remove('hidden');
+            rechargeAmount.classList.add('form-input-error');
+            showToast('请输入大于0的有效充值金额', 'error');
+            return;
+        }
+
+        try {
+            // 构造请求参数（无需传uuid，后端从token获取）
+            const formData = {
+                amount: amountVal // 后端会自动解析为decimal.Decimal
+            };
+
+            // 调用充值接口
+            const response = await requestApi('/account/recharge', 'POST', formData);
+
+            if (response.code === 200) {
+                showToast('充值成功', 'success');
+                closeRechargeModal();
+                // 重新加载账户信息
+                initPage();
+            } else {
+                showToast(response.message || '充值失败', 'error');
+            }
+        } catch (err) {
+            showToast('充值失败：' + err.message, 'error');
+            console.error('充值请求失败：', err);
+        }
+    }
+    /**
+     * 显示提示框
+     */
+    function showToast(text, type = 'info', duration = 3000) {
+        if (type === 'success') {
+            toastIcon.className = 'fa fa-check-circle mr-2';
+            toast.classList.add('bg-green-600');
+            toast.classList.remove('bg-red-600', 'bg-gray-800');
+        } else if (type === 'error') {
+            toastIcon.className = 'fa fa-exclamation-circle mr-2';
+            toast.classList.add('bg-red-600');
+            toast.classList.remove('bg-green-600', 'bg-gray-800');
+        } else {
+            toastIcon.className = 'fa fa-info-circle mr-2';
+            toast.classList.add('bg-gray-800');
+            toast.classList.remove('bg-green-600', 'bg-red-600');
+        }
+
+        toastText.textContent = text;
+        toast.classList.remove('hidden');
+
+        setTimeout(() => {
+            toast.classList.add('hidden');
+        }, duration);
+    }
+
+    /**
+     * 格式化空值显示
+     */
+    function formatEmptyValue(value) {
+        if (value === null || value === undefined || value === '' || value === 'null') {
+            return '<span class="info-empty">未设置</span>';
+        }
+        return value;
+    }
+
+    /**
+     * 格式化Decimal金额（字符串转保留两位小数）
+     */
+    function formatAmount(amountStr) {
+        if (!amountStr || amountStr === 'null') return '¥0.00';
+        const num = parseFloat(amountStr);
+        return isNaN(num) ? '¥0.00' : `¥${num.toFixed(2)}`;
+    }
+
+    /**
+     * 格式化时间字符串（2026-01-04T00:00:00+08:00 → 2026-01-04）
+     */
+    function formatBirthDate(dateStr) {
+        if (!dateStr) return '';
+        // 截取日期部分，去掉时间和时区
+        return dateStr.split('T')[0] || dateStr;
+    }
+
+    /**
+     * 验证手机号格式
+     */
+    function validatePhone(phone) {
+        if (!phone) return true; // 空值通过验证（后端允许空）
+        const phoneRegex = /^1[3-9]\d{9}$/;
+        return phoneRegex.test(phone);
+    }
+
+    /**
+     * 验证邮箱格式
+     */
+    function validateEmail(email) {
+        if (!email) return true; // 空值通过验证
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    }
+
+    /**
+     * 发起API请求
+     */
+    async function requestApi(url, method = 'GET', data = null) {
+        const token = getToken();
+        if (!token) {
+            throw new Error('未检测到登录状态，请重新登录');
+        }
+
+        const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        };
+
+        const requestOptions = {
+            method,
+            headers,
+            credentials: 'include'
+        };
+
+        // POST/PUT请求添加请求体
+        if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+            requestOptions.body = JSON.stringify(data);
+        }
+
+        const response = await fetch(`${API_BASE_URL}${url}`, requestOptions);
+
+        if (!response.ok) {
+            throw new Error(`接口请求失败：${response.status}`);
+        }
+
+        return await response.json();
+    }
+
+    /**
+     * 清除登录状态并跳转
+     */
+    function logoutAndRedirect() {
+        localStorage.removeItem(STORAGE_KEY);
+        sessionStorage.removeItem(STORAGE_KEY);
+        window.location.href = LOGIN_PAGE_URL;
+    }
+
+    /**
+     * 打开编辑弹窗并填充数据
+     */
+    function openEditModal() {
+        if (!currentUserData) return;
+
+        // 填充表单数据
+        formUsername.value = currentUserData.username || '';
+        formRealName.value = currentUserData.real_name || '';
+        formEmail.value = currentUserData.email || '';
+        formPhone.value = currentUserData.phone || '';
+
+        // 格式化出生日期为date输入框支持的格式
+        const birthDateVal = currentUserData.birth_date?.Valid ? formatBirthDate(currentUserData.birth_date.String) : '';
+        formBirthDate.value = birthDateVal;
+
+        // 设置性别单选框
+        const genderVal = currentUserData.gender || '';
+        for (const radio of genderRadios) {
+            radio.checked = (radio.value === genderVal);
+        }
+
+        // 重置错误提示
+        resetFormErrors();
+
+        // 显示弹窗
+        editModal.classList.remove('hidden');
+        // 禁止页面滚动
+        document.body.style.overflow = 'hidden';
+    }
+
+    /**
+     * 关闭编辑弹窗
+     */
+    function closeEditModal() {
+        editModal.classList.add('hidden');
+        // 恢复页面滚动
+        document.body.style.overflow = 'auto';
+    }
+
+    /**
+     * 重置表单错误提示
+     */
+    function resetFormErrors() {
+        emailError.classList.add('hidden');
+        phoneError.classList.add('hidden');
+        birthDateError.classList.add('hidden');
+
+        // 重置输入框样式
+        formEmail.classList.remove('form-input-error');
+        formPhone.classList.remove('form-input-error');
+        formBirthDate.classList.remove('form-input-error');
+    }
+
+    /**
+     * 提交编辑表单
+     */
+    async function submitEditForm() {
+        // 重置错误提示
+        resetFormErrors();
+
+        // 获取表单数据
+        const formData = {
+            username: formUsername.value.trim(),
+            real_name: formRealName.value.trim(),
+            email: formEmail.value.trim(),
+            phone: formPhone.value.trim(),
+            gender: Array.from(genderRadios).find(radio => radio.checked)?.value || '',
+            birth_date: formBirthDate.value.trim()
+        };
+
+        // 前端表单验证
+        let isValid = true;
+        if (!validateEmail(formData.email)) {
+            emailError.classList.remove('hidden');
+            formEmail.classList.add('form-input-error');
+            isValid = false;
+        }
+        if (!validatePhone(formData.phone)) {
+            phoneError.classList.remove('hidden');
+            formPhone.classList.add('form-input-error');
+            isValid = false;
+        }
+
+        if (!isValid) {
+            showToast('表单验证失败，请检查输入格式', 'error');
+            return;
+        }
+
+        try {
+            // 调用更新接口（后端会自动从中间件获取UUID）
+            const response = await requestApi(UPDATE_USER_API, 'POST', formData);
+
+            if (response.code === 200) {
+                showToast('个人信息更新成功', 'success');
+                closeEditModal();
+                // 重新加载页面数据
+                initPage();
+            } else {
+                showToast(response.message || '更新失败', 'error');
+            }
+        } catch (err) {
+            showToast('更新失败：' + err.message, 'error');
+            console.error('提交编辑失败：', err);
+        }
+    }
+
+    // ========== 核心逻辑 ==========
+    /**
+     * 初始化页面数据
+     */
+    async function initPage() {
+        // 重置状态
+        loading.classList.remove('hidden');
+        error.classList.add('hidden');
+        infoContent.classList.add('hidden');
+
+        try {
+            // 并行请求两个接口
+            const [userRes, accountRes] = await Promise.all([
+                requestApi(USER_INFO_API),
+                requestApi(ACCOUNT_API)
+            ]);
+
+            // 处理个人信息接口响应（{code:200, message:"查询成功", data: user}）
+            if (userRes.code !== 200) {
+                throw new Error(userRes.message || '获取个人信息失败');
+            }
+            const userData = userRes.data;
+            // 存储当前用户数据（用于编辑弹窗）
+            currentUserData = userData;
+
+            // 处理账户信息接口响应（{code:200, message:"success", data: account}）
+            if (accountRes.code !== 200) {
+                throw new Error(accountRes.message || '获取账户信息失败');
+            }
+            const accountData = accountRes.data;
+
+            // ========== 渲染个人信息 ==========
+            // 基础信息
+            username.textContent = userData.username || '未知用户';
+            navUsername.textContent = userData.username || '未知用户';
+            userId.textContent = userData.id || '0';
+
+            // 角色处理
+            const roleMap = {
+                'admin': '管理员',
+                'candidate': '候选人/学生',
+                'teacher': '教师',
+                'student': '学生'
+            };
+            const roleText = roleMap[userData.role?.toLowerCase()] || userData.role || '未知';
+            role.textContent = roleText;
+            userInitial.textContent = userData.username ? userData.username.charAt(0).toUpperCase() : 'U';
+            avatarInitial.textContent = userData.username ? userData.username.charAt(0).toUpperCase() : 'U';
+
+            // 扩展信息（处理null/空值）
+            realName.innerHTML = formatEmptyValue(userData.real_name);
+            gender.innerHTML = formatEmptyValue(userData.gender);
+            email.innerHTML = formatEmptyValue(userData.email);
+            phone.innerHTML = formatEmptyValue(userData.phone);
+            // 适配大写W的Wod字段
+            wod.innerHTML = formatEmptyValue(userData.Wod || '暂无');
+
+            // 出生日期（处理带时区的时间格式）
+            const birthDateVal = userData.birth_date?.Valid ? formatBirthDate(userData.birth_date.String) : '';
+            birthDate.innerHTML = formatEmptyValue(birthDateVal);
+
+            // 头像处理（适配绝对路径）
+            if (userData.avatar_url) {
+                // 拼接完整头像URL
+                avatarImg.src = `${API_BASE_URL}${userData.avatar_url}`;
+                avatarImg.classList.remove('hidden');
+                defaultAvatar.classList.add('hidden');
+            } else {
+                avatarImg.classList.add('hidden');
+                defaultAvatar.classList.remove('hidden');
+            }
+
+            // ========== 渲染账户信息 ==========
+            balance.textContent = formatAmount(accountData.balance);      // "90" → ¥90.00
+            totalRecharge.textContent = formatAmount(accountData.total_recharge); // "100" → ¥100.00
+            totalConsume.textContent = formatAmount(accountData.total_consume);   // "10" → ¥10.00
+
+            // 显示内容，隐藏加载
+            loading.classList.add('hidden');
+            infoContent.classList.remove('hidden');
+            showToast('个人信息加载成功', 'success');
+
+        } catch (err) {
+            // 处理错误
+            loading.classList.add('hidden');
+            error.classList.remove('hidden');
+            errorText.textContent = err.message;
+
+            // 未登录/Token失效，跳转登录页
+            if (err.message.includes('未检测到登录状态')) {
+                setTimeout(() => {
+                    logoutAndRedirect();
+                }, 2000);
+            }
+
+            showToast(err.message, 'error');
+            console.error('加载失败：', err);
+        }
+    }
+
+    // ========== 事件绑定 ==========
+    // ========== 头像上传弹窗事件 ==========
+    // 1. 点击头像/编辑按钮打开上传弹窗
+    avatarEditBtn.addEventListener('click', openAvatarUploadModal);
+    avatarImg.addEventListener('click', openAvatarUploadModal);
+    defaultAvatar.addEventListener('click', openAvatarUploadModal);
+
+    // 2. 关闭弹窗（按钮/外部点击）
+    closeAvatarModalBtn.addEventListener('click', closeAvatarUploadModal);
+    cancelAvatarUploadBtn.addEventListener('click', closeAvatarUploadModal);
+    avatarUploadModal.addEventListener('click', (e) => {
+        if (e.target === avatarUploadModal) {
+            closeAvatarUploadModal();
+        }
+    });
+
+    // 3. 点击选择区域触发文件选择
+    avatarFileSelectArea.addEventListener('click', () => {
+        avatarFileInput.click();
+    });
+
+    // 4. 选择文件后验证+预览
+    avatarFileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) {
+            selectedAvatarFile = null;
+            avatarFileError.classList.add('hidden');
+            return;
+        }
+
+        // 验证文件
+        if (validateAvatarFile(file)) {
+            selectedAvatarFile = file;
+            avatarFileError.classList.add('hidden');
+            previewAvatarFile(file); // 预览图片
+        } else {
+            selectedAvatarFile = null;
+            avatarFileError.classList.remove('hidden');
+            avatarFileInput.value = ''; // 清空选择
+        }
+    });
+
+    // 5. 拖拽文件上传（增强体验）
+    avatarFileSelectArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        avatarFileSelectArea.classList.add('border-xiyou-blue');
+    });
+    avatarFileSelectArea.addEventListener('dragleave', () => {
+        avatarFileSelectArea.classList.remove('border-xiyou-blue');
+    });
+    avatarFileSelectArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        avatarFileSelectArea.classList.remove('border-xiyou-blue');
+
+        const file = e.dataTransfer.files[0];
+        if (!file) return;
+
+        // 验证并预览
+        if (validateAvatarFile(file)) {
+            selectedAvatarFile = file;
+            avatarFileError.classList.add('hidden');
+            previewAvatarFile(file);
+            avatarFileInput.files = e.dataTransfer.files; // 同步到input
+        } else {
+            selectedAvatarFile = null;
+            avatarFileError.classList.remove('hidden');
+        }
+    });
+
+    // 6. 提交头像上传
+    submitAvatarUploadBtn.addEventListener('click', async () => {
+        if (!selectedAvatarFile) {
+            avatarFileError.classList.remove('hidden');
+            showToast('请选择有效的头像文件', 'error');
+            return;
+        }
+
+        // 上传文件并关闭弹窗
+        const success = await uploadAvatar(selectedAvatarFile);
+        if (success) {
+            closeAvatarUploadModal();
+        }
+    });
+    // 充值弹窗相关事件
+    // 打开充值弹窗
+    rechargeBtn.addEventListener('click', openRechargeModal);
+    // 关闭充值弹窗
+    closeRechargeModalBtn.addEventListener('click', closeRechargeModal);
+    cancelRechargeBtn.addEventListener('click', closeRechargeModal);
+    // 点击弹窗外部关闭
+    rechargeModal.addEventListener('click', (e) => {
+        if (e.target === rechargeModal) {
+            closeRechargeModal();
+        }
+    });
+    // 提交充值
+    submitRechargeBtn.addEventListener('click', submitRechargeForm);
+    // 快捷金额按钮
+    rechargeQuickBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            rechargeAmount.value = btn.dataset.amount;
+        });
+    });
+    // 金额输入框失焦验证
+    rechargeAmount.addEventListener('blur', () => {
+        const amountVal = parseFloat(rechargeAmount.value.trim());
+        if (isNaN(amountVal) || amountVal <= 0) {
+            rechargeAmountError.classList.remove('hidden');
+            rechargeAmount.classList.add('form-input-error');
+        } else {
+            rechargeAmountError.classList.add('hidden');
+            rechargeAmount.classList.remove('form-input-error');
+        }
+    });
+    // 退出登录
+    logoutBtn.addEventListener('click', handleLogout);
+
+    // 移动端菜单
+    document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+        alert('移动端菜单功能可后续完善');
+    });
+
+    // 编辑弹窗相关事件
+    editInfoBtn.addEventListener('click', openEditModal);
+    closeModalBtn.addEventListener('click', closeEditModal);
+    cancelEditBtn.addEventListener('click', closeEditModal);
+    submitEditBtn.addEventListener('click', submitEditForm);
+
+    // 点击弹窗外部关闭
+    editModal.addEventListener('click', (e) => {
+        if (e.target === editModal) {
+            closeEditModal();
+        }
+    });
+
+    // 表单输入实时验证
+    formEmail.addEventListener('blur', () => {
+        if (!validateEmail(formEmail.value)) {
+            emailError.classList.remove('hidden');
+            formEmail.classList.add('form-input-error');
+        } else {
+            emailError.classList.add('hidden');
+            formEmail.classList.remove('form-input-error');
+        }
+    });
+
+    formPhone.addEventListener('blur', () => {
+        if (!validatePhone(formPhone.value)) {
+            phoneError.classList.remove('hidden');
+            formPhone.classList.add('form-input-error');
+        } else {
+            phoneError.classList.add('hidden');
+            formPhone.classList.remove('form-input-error');
+        }
+    });
+
+    // ========== 页面初始化 ==========
+    window.addEventListener('load', initPage);
+
+    // 退出登录逻辑
+    function handleLogout() {
+        if (confirm('确定要退出登录吗？')) {
+            logoutAndRedirect();
+            showToast('退出登录成功', 'success');
+        }
+    }
+</script>
+</body>
+</html>
