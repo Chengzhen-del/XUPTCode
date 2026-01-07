@@ -1,0 +1,40 @@
+# Go 编译产物
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.out
+/bin/
+/pkg/
+
+# Go 模块缓存
+/vendor/
+/go.sum
+/go.mod.bak
+
+# 环境变量与配置（敏感信息）
+.env
+.env.local
+config/*.yaml
+config/*.toml
+!config/example.yaml  # 保留示例配置
+
+# 日志文件
+*.log
+/logs/
+
+# 前端忽略文件（Tailwind CSS/Vue/React 通用）
+web/node_modules/
+web/dist/
+web/build/
+web/.env
+web/.npmrc
+web/.vscode/
+
+# IDE 与编辑器配置
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
