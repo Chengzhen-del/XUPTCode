@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <script src="../static/js/config.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 西邮代码库 XUPTCode</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 图标库 -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+
+    <!-- 西邮校色配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        xiyou: {
+                            blue: '#00529B',    // 西邮主蓝
+                            red: '#E63946',     // 西邮辅助红
+                            light: '#E8F4FD',   // 浅蓝背景
+                        },
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .input-focus {
+                @apply focus:outline-none focus:ring-2 focus:ring-xiyou-blue/30 focus:border-xiyou-blue;
+            }
+            .btn-disabled {
+                @apply bg-gray-400 cursor-not-allowed hover:bg-gray-400;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans min-h-screen flex flex-col">
+<!-- 顶部导航（简化版） -->
+<header class="bg-white shadow-sm">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center">
+        <div class="text-xiyou-blue font-bold text-2xl">
+            XUPT<span class="text-xiyou-red">Code</span>
+        </div>
+    </div>
+</header>
+
+<!-- 登录主体区域 -->
+<main class="flex-grow flex items-center justify-center py-12 px-4">
+    <div class="w-full max-w-md bg-white rounded-xl shadow-md overflow-hidden">
+        <!-- 登录卡片头部 -->
+        <div class="px-6 py-8 bg-xiyou-light border-b border-gray-200">
+            <h2 class="text-2xl font-bold text-xiyou-blue text-center">西邮代码库 - 登录</h2>
+            <p class="text-gray-600 text-center mt-2">欢迎使用校园代码资源交易平台</p>
+        </div>
+
+        <!-- 登录表单 -->
+        <div class="px-6 py-8">
+            <form id="loginForm" class="space-y-6">
+                <!-- 登录方式选择（视觉提示） -->
+                <div class="text-sm text-gray-500 mb-2">
+                    <span>支持：用户名 / 手机号 / 西邮校园邮箱登录</span>
+                </div>
+
+                <!-- 用户名/手机号/邮箱输入框 -->
+                <div>
+                    <label for="loginAccount" class="block text-sm font-medium text-gray-700 mb-1">
+                        账号
+                    </label>
+                    <div class="relative">
+                        <i class="fa fa-user absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <input
+                                type="text"
+                                id="loginAccount"
+                                name="loginAccount"
+                                class="w-full pl-10 pr-4 py-2 rounded-md border border-gray-200 input-focus"
+                                placeholder="请输入用户名/手机号/校园邮箱"
+                        >
+                    </div>
+                    <p id="accountError" class="mt-1 text-xs text-xiyou-red hidden"></p>
+                </div>
+
+                <!-- 密码输入框 -->
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">
+                        密码
+                    </label>
+                    <div class="relative">
+                        <i class="fa fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <input
+                                type="password"
+                                id="password"
+                                name="password"
+                                class="w-full pl-10 pr-4 py-2 rounded-md border border-gray-200 input-focus"
+                                placeholder="请输入6-20位密码"
+                        >
+                    </div>
+                    <p id="passwordError" class="mt-1 text-xs text-xiyou-red hidden"></p>
+                </div>
+
+                <!-- 记住我 & 忘记密码 -->
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <input
+                                type="checkbox"
+                                id="rememberMe"
+                                name="rememberMe"
+                                class="h-4 w-4 text-xiyou-blue focus:ring-xiyou-blue border-gray-300 rounded"
+                        >
+                        <label for="rememberMe" class="ml-2 block text-sm text-gray-700">
+                            记住我（7天免登录）
+                        </label>
+                    </div>
+                    <div class="text-sm">
+                        <a href="#" class="text-xiyou-blue hover:text-xiyou-red transition-colors">
+                            忘记密码？
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 登录按钮 -->
+                <div>
+                    <button
+                            type="submit"
+                            id="loginBtn"
+                            class="w-full bg-xiyou-blue text-white py-2 rounded-md hover:bg-xiyou-blue/90 transition-colors flex items-center justify-center"
+                    >
+                        <i class="fa fa-sign-in mr-2"></i>
+                        登录
+                    </button>
+                </div>
+
+                <!-- 注册入口 -->
+                <div class="text-center text-sm text-gray-600">
+                    还没有账号？
+                    <a href="" data-page="REGISTER" class="text-xiyou-blue font-medium hover:text-xiyou-red transition-colors">
+                        立即注册
+                    </a>
+                </div>
+            </form>
+
+            <!-- 错误提示框（全局） -->
+            <div id="globalError" class="mt-4 p-3 bg-red-50 border border-red-200 rounded-md text-xiyou-red text-sm hidden"></div>
+        </div>
+    </div>
+</main>
+
+<!-- 页脚 -->
+<footer class="bg-gray-800 text-white py-6">
+    <div class="container mx-auto px-4 text-center text-gray-400 text-sm">
+        <p>© 2026 XUPTCode - 西安邮电大学校园代码库 | 仅限校内学习交流使用</p>
+    </div>
+</footer>
+
+<script>
+    // ========== 统一配置：API和页面路径 ==========
+    const CONFIG = {
+        // API配置
+        API: {
+            BASE_URL: AppConfig.API_BASE_URL,  // 后端服务地址
+            LOGIN: '/staff/login'                // 登录接口
+        },
+        // 页面路径配置
+        PAGES: {
+            REGISTER: '/page/register',         // 注册页
+            INDEX: '/page/index',               // 首页
+            FIRST: '/page/first'                // 用户首页
+        },
+        // 存储配置
+        STORAGE: {
+            KEY: 'xuptcode_user_info'            // 用户信息存储key
+        }
+    };
+    
+    // 向后兼容的常量（保留原有变量名）
+    const API_BASE_URL = CONFIG.API.BASE_URL;
+    const LOGIN_API = CONFIG.API.LOGIN;
+    const STORAGE_KEY = CONFIG.STORAGE.KEY;
+
+    // ========== DOM元素 ==========
+    const loginForm = document.getElementById('loginForm');
+    const loginBtn = document.getElementById('loginBtn');
+    const loginAccount = document.getElementById('loginAccount');
+    const password = document.getElementById('password');
+    const accountError = document.getElementById('accountError');
+    const passwordError = document.getElementById('passwordError');
+    const globalError = document.getElementById('globalError');
+
+    // 防抖标识
+    let isSubmitting = false;
+
+    // ========== 工具函数 ==========
+    /**
+     * 验证表单数据（和后端LoginRequest规则对齐）
+     */
+    function validateForm() {
+        let isValid = true;
+        // 重置错误提示
+        [accountError, passwordError, globalError].forEach(el => el.classList.add('hidden'));
+
+        // 1. 账号验证
+        const accountVal = loginAccount.value.trim();
+        if (!accountVal) {
+            accountError.textContent = '请输入用户名/手机号/校园邮箱';
+            accountError.classList.remove('hidden');
+            isValid = false;
+        } else if (accountVal.includes('@')) {
+            // 校验西邮校园邮箱格式
+            const emailReg = /^[a-zA-Z0-9._%+-]+@(xupt|xiyou)\.edu\.cn$/i;
+            if (!emailReg.test(accountVal)) {
+                accountError.textContent = '请输入有效的西邮校园邮箱（如 xxx@xupt.edu.cn）';
+                accountError.classList.remove('hidden');
+                isValid = false;
+            }
+        }
+
+        // 2. 密码验证（6-20位）
+        const pwdVal = password.value.trim();
+        if (!pwdVal) {
+            passwordError.textContent = '请输入密码';
+            passwordError.classList.remove('hidden');
+            isValid = false;
+        } else if (pwdVal.length < 6 || pwdVal.length > 20) {
+            passwordError.textContent = '密码长度必须为6-20位';
+            passwordError.classList.remove('hidden');
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+    /**
+     * 存储用户登录信息（LoginResponse）
+     * @param {LoginResponse} userInfo - 后端返回的LoginResponse数据
+     * @param {boolean} remember - 是否记住登录（7天有效）
+     */
+    function saveUserInfo(userInfo, remember) {
+        const storage = remember ? localStorage : sessionStorage;
+        // 存储完整的LoginResponse数据（JSON序列化）
+        storage.setItem(STORAGE_KEY, JSON.stringify({
+            token: userInfo.token,
+            user_id: userInfo.user_id,
+            username: userInfo.username,
+            role: userInfo.role,
+            expireTime: remember ? Date.now() + 7 * 24 * 60 * 60 * 1000 : null // 7天有效期
+        }));
+    }
+
+    /**
+     * 根据角色跳转对应页面
+     * @param {string} role - 用户角色（student/teacher/admin）
+     */
+    function redirectByRole(role) {
+        // 根据角色跳转对应页面
+        let targetUrl = CONFIG.PAGES.FIRST; // 默认跳转到用户首页
+        
+        // 可以根据不同角色设置不同跳转（如果需要）
+        // if (role === 'admin') {
+        //     targetUrl = CONFIG.PAGES.ADMIN_HOME;
+        // }
+
+        window.location.href = targetUrl;
+    }
+
+    /**
+     * 处理登录请求异常
+     * @param {Error|string} error - 错误信息
+     */
+    function handleLoginError(error) {
+        globalError.textContent = error.message || '登录失败，请稍后重试';
+        globalError.classList.remove('hidden');
+        // 恢复按钮状态
+        isSubmitting = false;
+        loginBtn.innerHTML = '<i class="fa fa-sign-in mr-2"></i> 登录';
+        loginBtn.classList.remove('btn-disabled');
+    }
+
+    // ========== 核心登录逻辑（适配后端返回格式） ==========
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        // 1. 防抖校验
+        if (isSubmitting) return;
+        // 2. 表单验证
+        if (!validateForm()) return;
+
+        // 3. 构造请求数据（匹配LoginRequest结构体）
+        const accountVal = loginAccount.value.trim();
+        const requestData = { password: password.value.trim() };
+        // 根据账号类型填充对应字段
+        if (accountVal.includes('@')) {
+            requestData.email = accountVal;
+        } else if (/^1[3-9]\d{9}$/.test(accountVal)) {
+            requestData.phone = accountVal;
+        } else {
+            requestData.username = accountVal;
+        }
+
+        try {
+            // 4. 发起登录请求（地址改为/staff/login）
+            isSubmitting = true;
+            loginBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i> 登录中...';
+            loginBtn.classList.add('btn-disabled');
+
+            const response = await fetch(`${API_BASE_URL}${LOGIN_API}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestData),
+                // 解决跨域问题（如果后端未配置CORS，需开启）
+                credentials: 'include'
+            });
+
+            const result = await response.json();
+
+            // 5. 适配后端返回格式：{code:200, message: LoginResponse对象}
+            // 注意：后端Login接口的message字段就是LoginResponse对象本身
+            if (response.ok && result.code === 200) {
+                // message字段就是LoginResponse对象（包含token, user_id, username, role）
+                const loginResponse = result.message;
+
+                // 校验LoginResponse核心字段是否完整
+                if (!loginResponse || typeof loginResponse !== 'object') {
+                    throw new Error('登录响应格式错误：message字段不是对象');
+                }
+                
+                const requiredFields = ['token', 'user_id', 'username', 'role'];
+                const missingFields = requiredFields.filter(field => !loginResponse[field]);
+                if (missingFields.length > 0) {
+                    throw new Error(`登录响应数据缺失：${missingFields.join(', ')}`);
+                }
+
+                // 6. 存储登录信息（LoginResponse）
+                const rememberMe = document.getElementById('rememberMe').checked;
+                saveUserInfo(loginResponse, rememberMe);
+
+                // 7. 根据角色跳转
+                redirectByRole(loginResponse.role);
+            } else {
+                // 后端返回业务错误（如账号密码错误）
+                // 后端可能返回：{code: 400, message: "参数校验失败"} 或 {code: 401, message: "登录失败", error: "..."}
+                const errorMsg = result.error || result.message || '账号或密码错误';
+                throw new Error(errorMsg);
+            }
+        } catch (error) {
+            handleLoginError(error);
+        }
+    });
+
+    // ========== 初始化页面链接 ==========
+    function initPageLinks() {
+        // 为所有带data-page属性的链接设置href
+        document.querySelectorAll('a[data-page]').forEach(link => {
+            const pageKey = link.getAttribute('data-page');
+            if (CONFIG.PAGES[pageKey]) {
+                link.href = CONFIG.PAGES[pageKey];
+            }
+        });
+    }
+
+    // ========== 页面初始化 ==========
+    // 检查是否已登录，避免重复登录
+    window.addEventListener('load', () => {
+        initPageLinks(); // 初始化链接
+        const userInfo = JSON.parse(localStorage.getItem(STORAGE_KEY) || sessionStorage.getItem(STORAGE_KEY));
+        if (userInfo?.token) {
+            // 已登录则直接跳转首页
+            redirectByRole(userInfo.role);
+        }
+    });
+</script>
+</body>
+</html>

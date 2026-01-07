@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <script src="../static/js/config.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>首页 - 西邮代码库 XUPTCode</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 图标库 -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+
+    <!-- 西邮校色配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        xiyou: {
+                            blue: '#00529B',    // 西邮主蓝
+                            red: '#E63946',     // 西邮辅助红
+                            light: '#E8F4FD',   // 浅蓝背景
+                        },
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-hover {
+                transition: all 0.3s ease;
+            }
+            .card-hover:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 25px -5px rgba(0, 82, 155, 0.1);
+            }
+            .btn-disabled {
+                @apply bg-gray-400 cursor-not-allowed hover:bg-gray-400;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans min-h-screen flex flex-col">
+<!-- 顶部导航栏（带用户信息） -->
+<header class="sticky top-0 z-50 bg-white shadow-sm">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+            <!-- 左侧Logo -->
+            <div class="flex items-center">
+                <div class="text-xiyou-blue font-bold text-2xl mr-8">
+                    XUPT<span class="text-xiyou-red">Code</span>
+                </div>
+                <!-- 导航菜单（桌面端） -->
+                <nav class="hidden md:flex space-x-6">
+                    <a href="" data-page="INDEX" class="text-xiyou-blue font-medium hover:text-xiyou-red transition-colors">首页</a>
+                    <a href="" data-page="RESOURCE_LIST" class="text-gray-600 font-medium hover:text-xiyou-blue transition-colors">资源库</a>
+                    <a href="" data-page="UPLOAD" class="text-gray-600 font-medium hover:text-xiyou-blue transition-colors">上传资源</a>
+                    <a href="" data-page="PERSON" class="text-gray-600 font-medium hover:text-xiyou-blue transition-colors">主页</a>
+                    <a href="/page/ai" class="text-gray-600 font-medium hover:text-xiyou-blue transition-colors">AI</a>
+                </nav>
+            </div>
+
+            <!-- 右侧用户信息 + 退出登录 -->
+            <div class="flex items-center space-x-4">
+                <!-- 用户信息卡片：修改为支持头像显示 -->
+                <div class="hidden md:flex items-center space-x-3">
+                    <!-- 头像容器：新增img标签，默认隐藏，有头像时显示 -->
+                    <div class="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-xiyou-blue font-bold bg-xiyou-light">
+                        <img id="userAvatar" src="" alt="用户头像" class="w-full h-full object-cover hidden" />
+                        <span id="userInitial">U</span>
+                    </div>
+                    <div class="text-left">
+                        <div class="text-sm font-medium text-gray-800" id="showUsername">用户名</div>
+                        <div class="text-xs text-gray-500" id="showRole">学生</div>
+                    </div>
+                </div>
+
+                <!-- 退出登录按钮 -->
+                <button id="logoutBtn" class="text-gray-600 hover:text-xiyou-red transition-colors flex items-center">
+                    <i class="fa fa-sign-out mr-1"></i>
+                    <span class="hidden sm:inline" id="logoutBtnText">退出登录</span>
+                </button>
+
+                <!-- 移动端菜单按钮 -->
+                <button class="md:hidden text-gray-700 hover:text-xiyou-blue" id="mobileMenuBtn">
+                    <i class="fa fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- 欢迎区域：新增真实姓名显示 -->
+<section class="bg-xiyou-light py-10 md:py-16">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-4xl mx-auto">
+            <h1 class="text-[clamp(1.8rem,4vw,2.5rem)] font-bold text-xiyou-blue mb-4">
+                欢迎回来，<span id="welcomeUsername" class="text-xiyou-red">XXX</span>！
+            </h1>
+            <p class="text-gray-700 text-lg mb-6">
+                你的专属西邮代码资源交易平台，轻松分享和获取课程设计、作业资源
+            </p>
+            <div class="flex flex-wrap gap-4 text-sm text-gray-600">
+                <span class="bg-white px-3 py-1 rounded-full shadow-sm">用户ID：<span id="showUserId">0</span></span>
+                <span class="bg-white px-3 py-1 rounded-full shadow-sm">角色：<span id="showRoleTag">学生</span></span>
+                <span class="bg-white px-3 py-1 rounded-full shadow-sm">真实姓名：<span id="showRealName">未设置</span></span>
+                <span class="bg-white px-3 py-1 rounded-full shadow-sm">性别：<span id="showGender">未设置</span></span>
+                <span class="bg-white px-3 py-1 rounded-full shadow-sm" id="loginTime">登录时间：2026-01-06</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 核心功能入口 -->
+<section class="py-12 md:py-16">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-12">
+            <h2 class="text-3xl font-bold text-gray-800 mb-3">核心功能</h2>
+            <p class="text-gray-600 max-w-2xl mx-auto">选择你想要的操作，开始使用西邮代码库</p>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <!-- 上传资源 -->
+            <div class="bg-white rounded-xl shadow-sm p-6 text-center card-hover">
+                <div class="w-16 h-16 bg-xiyou-light rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa fa-cloud-upload text-xiyou-blue text-2xl"></i>
+                </div>
+                <h3 class="font-bold text-lg text-gray-800 mb-2">上传资源</h3>
+                <p class="text-gray-600 text-sm mb-4">分享你的课程设计/作业，赚取收益</p>
+                <a href="" data-page="UPLOAD" class="text-xiyou-blue hover:text-xiyou-red transition-colors font-medium">
+                    立即上传 <i class="fa fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+
+            <!-- 浏览资源 -->
+            <div class="bg-white rounded-xl shadow-sm p-6 text-center card-hover">
+                <div class="w-16 h-16 bg-xiyou-light rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa fa-search text-xiyou-blue text-2xl"></i>
+                </div>
+                <h3 class="font-bold text-lg text-gray-800 mb-2">浏览资源</h3>
+                <p class="text-gray-600 text-sm mb-4">查找所需的课程设计/作业资源</p>
+                <a href="" data-page="RESOURCE_LIST" class="text-xiyou-blue hover:text-xiyou-red transition-colors font-medium">
+                    开始浏览 <i class="fa fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+
+            <!-- 我的订单 -->
+            <div class="bg-white rounded-xl shadow-sm p-6 text-center card-hover">
+                <div class="w-16 h-16 bg-xiyou-light rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa fa-shopping-cart text-xiyou-blue text-2xl"></i>
+                </div>
+                <h3 class="font-bold text-lg text-gray-800 mb-2">我的订单</h3>
+                <p class="text-gray-600 text-sm mb-4">查看已购买/已售出的资源订单</p>
+                <a href="" data-page="ORDER_LIST" class="text-xiyou-blue hover:text-xiyou-red transition-colors font-medium">
+                    查看订单 <i class="fa fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+
+            <!-- 个人中心 -->
+            <div class="bg-white rounded-xl shadow-sm p-6 text-center card-hover">
+                <div class="w-16 h-16 bg-xiyou-light rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa fa-user text-xiyou-blue text-2xl"></i>
+                </div>
+                <h3 class="font-bold text-lg text-gray-800 mb-2">个人中心</h3>
+                <p class="text-gray-600 text-sm mb-4">管理个人信息、收益和收藏</p>
+                <a href="" data-page="PERSON" class="text-xiyou-blue hover:text-xiyou-red transition-colors font-medium">
+                    进入中心 <i class="fa fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 管理员专属入口（根据角色显示/隐藏） -->
+<section id="adminSection" class="py-10 bg-gray-50 hidden">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-white rounded-xl shadow-sm p-6 md:p-8">
+            <h3 class="text-xl font-bold text-xiyou-blue mb-4 flex items-center">
+                <i class="fa fa-shield mr-2"></i> 管理员专属功能
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <a href="" data-page="RESOURCE_AUDIT" class="border border-gray-200 rounded-lg p-4 hover:border-xiyou-blue transition-colors">
+                    <h4 class="font-medium text-gray-800 mb-1">资源审核</h4>
+                    <p class="text-sm text-gray-600">审核用户上传的资源，处理违规内容</p>
+                </a>
+                <a href="" data-page="USER_MANAGE" class="border border-gray-200 rounded-lg p-4 hover:border-xiyou-blue transition-colors">
+                    <h4 class="font-medium text-gray-800 mb-1">用户管理</h4>
+                    <p class="text-sm text-gray-600">查看和管理平台所有用户信息</p>
+                </a>
+                <a href="" data-page="ORDER_MANAGE" class="border border-gray-200 rounded-lg p-4 hover:border-xiyou-blue transition-colors">
+                    <h4 class="font-medium text-gray-800 mb-1">订单管理</h4>
+                    <p class="text-sm text-gray-600">查看平台所有交易订单，处理退款</p>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 最近动态（简化版） -->
+<section class="py-12">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="text-2xl font-bold text-gray-800">最近动态</h2>
+            <a href="#" class="text-xiyou-blue hover:text-xiyou-red transition-colors text-sm font-medium">
+                查看更多 <i class="fa fa-angle-right ml-1"></i>
+            </a>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="p-6">
+                <div class="text-sm text-gray-500 mb-4">
+                    你还没有任何操作记录，快去上传或购买资源吧！
+                </div>
+                <a href="" data-page="UPLOAD" class="inline-block bg-xiyou-blue text-white px-4 py-2 rounded-md hover:bg-xiyou-blue/90 transition-colors">
+                    <i class="fa fa-upload mr-1"></i> 上传第一个资源
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 全局提示框（用于退出登录结果提示） -->
+<div id="globalToast" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-lg bg-gray-800 text-white shadow-lg hidden flex items-center">
+    <i class="fa fa-info-circle mr-2" id="toastIcon"></i>
+    <span id="toastText">操作提示</span>
+</div>
+
+<!-- 页脚 -->
+<footer class="bg-gray-800 text-white py-8 mt-auto">
+    <div class="container mx-auto px-4 text-center text-gray-400 text-sm">
+        <p>© 2026 XUPTCode - 西安邮电大学校园代码库 | 仅限校内学习交流使用</p>
+    </div>
+</footer>
+
+<script>
+    // ========== 统一配置：API和页面路径 ==========
+    const CONFIG = {
+        // API配置
+        API: {
+            BASE_URL: AppConfig.API_BASE_URL, // 后端服务地址
+            GET_INFO: '/staff/get-info',        // 用户信息查询接口
+            LOGOUT: '/staff/logout'             // 退出登录接口
+        },
+        // 页面路径配置
+        PAGES: {
+            INDEX: '/page/index',              // 首页
+            LOGIN: '/page/login',              // 登录页
+            REGISTER: '/page/register',        // 注册页
+            PERSON: '/page/person',            // 个人中心
+            UPLOAD: '/page/upload',            // 上传资源
+            RESOURCE_LIST: '/page/resource-list',  // 资源库
+            ORDER_LIST: '/page/order-list',    // 订单列表
+            RESOURCE_AUDIT: '/page/resource-audit', // 资源审核（管理员）
+            USER_MANAGE: '/page/user-manage',  // 用户管理（管理员）
+            ORDER_MANAGE: '/page/order-manage' // 订单管理（管理员）
+        },
+        // 存储配置
+        STORAGE: {
+            KEY: 'xuptcode_user_info'           // 用户信息存储key
+        }
+    };
+    
+    // 向后兼容的常量（保留原有变量名）
+    const API_BASE_URL = CONFIG.API.BASE_URL;
+    const GET_INFO_API = CONFIG.API.GET_INFO;
+    const LOGOUT_API = CONFIG.API.LOGOUT;
+    const STORAGE_KEY = CONFIG.STORAGE.KEY;
+    const LOGIN_PAGE_URL = CONFIG.PAGES.LOGIN;
+
+    // ========== DOM元素 ==========
+    const welcomeUsername = document.getElementById('welcomeUsername');
+    const showUsername = document.getElementById('showUsername');
+    const showUserId = document.getElementById('showUserId');
+    const showRole = document.getElementById('showRole');
+    const showRoleTag = document.getElementById('showRoleTag');
+    const userInitial = document.getElementById('userInitial');
+    const userAvatar = document.getElementById('userAvatar'); // 新增：用户头像img标签
+    const showRealName = document.getElementById('showRealName'); // 新增：真实姓名
+    const showGender = document.getElementById('showGender'); // 新增：性别
+    const loginTime = document.getElementById('loginTime');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const logoutBtnText = document.getElementById('logoutBtnText');
+    const adminSection = document.getElementById('adminSection');
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const globalToast = document.getElementById('globalToast');
+    const toastIcon = document.getElementById('toastIcon');
+    const toastText = document.getElementById('toastText');
+
+    // ========== 状态控制 ==========
+    let isLoggingOut = false; // 退出登录请求中标识
+    let isGettingInfo = false; // 新增：获取用户信息请求中标识
+
+    // ========== 工具函数 ==========
+    /**
+     * 获取并校验登录用户信息（本地存储）
+     * @returns {Object|null} 用户信息（LoginResponse）
+     */
+    function getUserInfo() {
+        // 从localStorage/sessionStorage获取
+        const userInfoStr = localStorage.getItem(STORAGE_KEY) || sessionStorage.getItem(STORAGE_KEY);
+        if (!userInfoStr) return null;
+
+        try {
+            const userInfo = JSON.parse(userInfoStr);
+            // 校验核心字段（token/user_id/username/role）
+            if (!userInfo.token || !userInfo.user_id || !userInfo.username || !userInfo.role) {
+                return null;
+            }
+            // 校验有效期（仅对记住我的用户）
+            if (userInfo.expireTime && Date.now() > userInfo.expireTime) {
+                // 有效期过期，清除存储
+                clearUserInfo();
+                return null;
+            }
+            return userInfo;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    /**
+     * 清除用户登录信息
+     */
+    function clearUserInfo() {
+        localStorage.removeItem(STORAGE_KEY);
+        sessionStorage.removeItem(STORAGE_KEY);
+    }
+
+    /**
+     * 显示全局提示框
+     * @param {string} text - 提示文本
+     * @param {string} type - 类型（success/error/info）
+     * @param {number} duration - 显示时长（毫秒）
+     */
+    function showToast(text, type = 'info', duration = 3000) {
+        // 设置图标和背景色
+        if (type === 'success') {
+            toastIcon.className = 'fa fa-check-circle mr-2';
+            globalToast.classList.add('bg-green-600');
+            globalToast.classList.remove('bg-red-600', 'bg-gray-800');
+        } else if (type === 'error') {
+            toastIcon.className = 'fa fa-exclamation-circle mr-2';
+            globalToast.classList.add('bg-red-600');
+            globalToast.classList.remove('bg-green-600', 'bg-gray-800');
+        } else {
+            toastIcon.className = 'fa fa-info-circle mr-2';
+            globalToast.classList.add('bg-gray-800');
+            globalToast.classList.remove('bg-green-600', 'bg-red-600');
+        }
+        // 设置文本并显示
+        toastText.textContent = text;
+        globalToast.classList.remove('hidden');
+        // 自动隐藏
+        setTimeout(() => {
+            globalToast.classList.add('hidden');
+        }, duration);
+    }
+
+    /**
+     * 新增：调用用户信息查询接口
+     * @param {string} token - 用户Token
+     * @returns {Promise<Object>} 接口返回的用户信息
+     */
+    async function callGetInfoApi(token) {
+        try {
+            // 后端接口：GET /staff/get-info，需要JWT中间件
+            const response = await fetch(`${CONFIG.API.BASE_URL}${CONFIG.API.GET_INFO}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` // 携带Token
+                },
+                credentials: 'include' // 跨域时携带凭证
+            });
+
+            const result = await response.json();
+
+            // 后端返回格式：{code: 200, message: "查询成功", data: User}
+            if (response.ok && result.code === 200) {
+                // 查询成功，返回用户数据
+                return result.data;
+            } else {
+                // 后端返回错误：{code: 400/401, message: "xxx"}
+                throw new Error(result.message || result.error || '查询用户信息失败');
+            }
+        } catch (error) {
+            // 捕获网络/接口错误
+            throw new Error(`获取用户信息失败：${error.message}`);
+        }
+    }
+
+    /**
+     * 新增：渲染用户信息到页面
+     * @param {Object} userData - 接口返回的用户信息
+     */
+    function renderUserInfo(userData) {
+        // 1. 基础信息渲染
+        welcomeUsername.textContent = userData.username || '未知用户';
+        showUsername.textContent = userData.username || '未知用户';
+        showUserId.textContent = userData.id || '0'; // 接口返回的id
+
+        // 2. 角色处理：转换英文角色为中文显示
+        const roleMap = {
+            'admin': '管理员',
+            'candidate': '候选人/学生', // 根据你的业务调整
+            'teacher': '教师',
+            'student': '学生'
+        };
+        const roleText = roleMap[userData.role?.toLowerCase()] || userData.role || '未知角色';
+        showRole.textContent = roleText;
+        showRoleTag.textContent = roleText;
+
+        // 3. 头像处理：有头像URL则显示头像，否则显示首字母
+        if (userData.avatar_url) {
+            // 拼接完整头像URL
+            const fullAvatarUrl = userData.avatar_url.startsWith('http') 
+                ? userData.avatar_url 
+                : `${CONFIG.API.BASE_URL}${userData.avatar_url}`;
+            userAvatar.src = fullAvatarUrl;
+            userAvatar.classList.remove('hidden'); // 显示头像
+            userInitial.classList.add('hidden'); // 隐藏首字母
+        } else {
+            // 无头像，显示用户名首字母
+            const initial = userData.username ? userData.username.charAt(0).toUpperCase() : 'U';
+            userInitial.textContent = initial;
+            userAvatar.classList.add('hidden'); // 隐藏头像
+            userInitial.classList.remove('hidden'); // 显示首字母
+        }
+
+        // 4. 扩展信息渲染
+        showRealName.textContent = userData.real_name || '未设置';
+        // 性别处理
+        const genderMap = {
+            '男': '男',
+            '女': '女',
+            '未知': '未知',
+            '': '未设置'
+        };
+        showGender.textContent = genderMap[userData.gender] || '未设置';
+
+        // 5. 根据角色显示管理员入口
+        if (userData.role?.toLowerCase() === 'admin') {
+            adminSection.classList.remove('hidden');
+        } else {
+            adminSection.classList.add('hidden');
+        }
+
+        // 6. 登录时间（保持原有逻辑）
+        const now = new Date();
+        const timeStr = `${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
+        loginTime.textContent = `登录时间：${timeStr}`;
+    }
+
+    /**
+     * 初始化页面数据（修改：优先调用接口获取最新信息）
+     */
+    async function initPage() {
+        // 1. 校验本地登录状态
+        const localUserInfo = getUserInfo();
+        if (!localUserInfo) {
+            // 未登录/登录失效，跳转到登录页
+            window.location.href = LOGIN_PAGE_URL;
+            return;
+        }
+
+        // 2. 调用接口获取最新用户信息
+        if (isGettingInfo) return;
+        isGettingInfo = true;
+
+        try {
+            // 调用get-info接口
+            const userData = await callGetInfoApi(localUserInfo.token);
+            // 渲染用户信息到页面
+            renderUserInfo(userData);
+            showToast('用户信息加载成功', 'success');
+        } catch (error) {
+            // 接口调用失败：提示并跳登录页
+            showToast(error.message, 'error');
+            setTimeout(() => {
+                clearUserInfo();
+                window.location.href = LOGIN_PAGE_URL;
+            }, 2000);
+        } finally {
+            isGettingInfo = false;
+        }
+    }
+
+    /**
+     * 调用后端退出登录接口
+     * @param {string} token - 用户Token
+     * @returns {Promise<boolean>} 是否退出成功
+     */
+    async function callLogoutApi(token) {
+        try {
+            const response = await fetch(`${CONFIG.API.BASE_URL}${CONFIG.API.LOGOUT}`, {
+                method: 'POST', // 后端Logout接口建议用POST（根据你的实际接口调整）
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` // 携带Token
+                },
+                credentials: 'include' // 跨域时携带凭证
+            });
+
+            const result = await response.json();
+
+            // 处理后端响应码
+            if (response.ok) {
+                if (result.code === 200) {
+                    // 退出登录成功
+                    return true;
+                } else if (result.code === 400) {
+                    showToast(result.message || '未传入登录凭证', 'error');
+                    return false;
+                } else if (result.code === 500) {
+                    showToast(result.message || '退出登录失败', 'error');
+                    return false;
+                }
+            } else {
+                showToast('接口请求失败', 'error');
+                return false;
+            }
+        } catch (error) {
+            // 网络错误/接口异常
+            showToast(`网络错误：${error.message}`, 'error');
+            return false;
+        }
+    }
+
+    /**
+     * 退出登录逻辑（对接后端接口）
+     */
+    async function handleLogout() {
+        // 防止重复请求
+        if (isLoggingOut) return;
+
+        // 确认退出
+        if (!confirm('确定要退出登录吗？')) {
+            return;
+        }
+
+        // 获取用户信息
+        const userInfo = getUserInfo();
+        if (!userInfo || !userInfo.token) {
+            showToast('未获取到登录凭证', 'error');
+            // 清除本地存储并跳转
+            clearUserInfo();
+            window.location.href = LOGIN_PAGE_URL;
+            return;
+        }
+
+        try {
+            // 设置请求状态
+            isLoggingOut = true;
+            logoutBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-1"></i><span class="hidden sm:inline">退出中...</span>';
+            logoutBtn.classList.add('text-gray-400', 'cursor-not-allowed');
+
+            // 调用后端退出接口
+            const logoutSuccess = await callLogoutApi(userInfo.token);
+
+            if (logoutSuccess) {
+                // 后端退出成功，清除本地存储
+                clearUserInfo();
+                showToast('退出登录成功', 'success');
+                // 延迟跳转（让用户看到提示）
+                setTimeout(() => {
+                    window.location.href = LOGIN_PAGE_URL;
+                }, 1500);
+            }
+        } catch (error) {
+            showToast(`退出失败：${error.message}`, 'error');
+        } finally {
+            // 恢复按钮状态
+            isLoggingOut = false;
+            logoutBtn.innerHTML = '<i class="fa fa-sign-out mr-1"></i><span class="hidden sm:inline" id="logoutBtnText">退出登录</span>';
+            logoutBtn.classList.remove('text-gray-400', 'cursor-not-allowed');
+        }
+    }
+
+    // ========== 事件绑定 ==========
+    // 退出登录按钮
+    logoutBtn.addEventListener('click', handleLogout);
+    // 移动端菜单按钮（简化版）
+    mobileMenuBtn.addEventListener('click', () => {
+        alert('移动端菜单功能可后续完善，包含导航和用户信息');
+    });
+
+    // ========== 初始化页面链接 ==========
+    function initPageLinks() {
+        // 为所有带data-page属性的链接设置href
+        document.querySelectorAll('a[data-page]').forEach(link => {
+            const pageKey = link.getAttribute('data-page');
+            if (CONFIG.PAGES[pageKey]) {
+                link.href = CONFIG.PAGES[pageKey];
+            }
+        });
+    }
+
+    // ========== 页面初始化 ==========
+    window.addEventListener('load', () => {
+        initPageLinks(); // 初始化链接
+        initPage();      // 初始化页面数据
+    });
+</script>
+</body>
+</html>
